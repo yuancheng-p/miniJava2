@@ -16,7 +16,7 @@
 (**************
  * The tokens *
  **************)
-	  
+
   (* Operators *)
 %token OP_MUL OP_DIV OP_MOD OP_ADD OP_SUB
 %token OP_AND OP_OR OP_XOR OP_NOT
@@ -32,7 +32,7 @@
 %token ASS_SHL ASS_SHR ASS_SHRR ASS_AND ASS_XOR ASS_OR
 
 (* Separators *)
-%token LPAREN RPAREN 
+%token LPAREN RPAREN
 
 (* Literal values *)
 %token <string> INT_LIT
@@ -129,14 +129,14 @@ switchStatement:
 switchLabel:
   | CASE expression COLON { }
   | DEFAULT COLON { }
-	    
+
 expression0:
   | e=expression { `Exp e }
-  | o=expression vdl=separated_nonempty_list(COMMA,variableDeclarator)  { 
+  | o=expression vdl=separated_nonempty_list(COMMA,variableDeclarator)  {
       let t = listOfTypes_form_exp o in
       `Decl (VarDecl (List.map (fun (id,init) -> t, id, init) vdl))
     }
-		  
+
 %inline catch:
   | CATCH LPAREN p=formalParameter RPAREN b=block { p,b }
 
@@ -146,7 +146,7 @@ forInit:
   | variableModifier? vdl=separated_nonempty_list(COMMA,variableDeclarator2) { List.map (fun (id,init) -> None , id, init) vdl }
 %inline variableModifier: FINAL { }
 
-	      
+
 %public %inline variableDeclarator:
   | id=IDENTIFIER list(pair(LBRACKET,RBRACKET)) init=option(preceded(ASSIGN,variableInitializer)) { id, init }
 
@@ -248,16 +248,16 @@ typeExpr:
 %inline prefix_op:
   | OP_NOT { Op_not }
   | OP_BNOT { Op_bnot }
-						  
+
 %inline postfix_op:
   | OP_INC { Incr }
   | OP_DEC { Decr }
-    
+
 %inline name:
   | THIS { "this" }
   | SUPER { "super" }
   | id=IDENTIFIER { id }
-						  
+
 %inline assign_op:
   | ASSIGN   { Assign   }
   | ASS_ADD  { Ass_add  }

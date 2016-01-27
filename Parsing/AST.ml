@@ -4,8 +4,8 @@ type argument = {
     ptype : Type.t;
     pident : string;
   }
-    
-type value = 
+
+type value =
   | String of string
   | Int of string
   | Float of string
@@ -24,43 +24,43 @@ type prefix_op =
   | Op_decr
   | Op_bnot
   | Op_plus
-    
+
 type assign_op =
-  | Assign  
-  | Ass_add 
-  | Ass_sub 
-  | Ass_mul 
-  | Ass_div 
-  | Ass_mod 
-  | Ass_shl 
-  | Ass_shr 
+  | Assign
+  | Ass_add
+  | Ass_sub
+  | Ass_mul
+  | Ass_div
+  | Ass_mod
+  | Ass_shl
+  | Ass_shr
   | Ass_shrr
-  | Ass_and 
-  | Ass_xor 
-  | Ass_or  
+  | Ass_and
+  | Ass_xor
+  | Ass_or
 
 type infix_op =
-  | Op_cor  
-  | Op_cand 
-  | Op_or   
-  | Op_and  
-  | Op_xor  
-  | Op_eq   
-  | Op_ne   
-  | Op_gt   
-  | Op_lt   
-  | Op_ge   
-  | Op_le   
-  | Op_shl  
-  | Op_shr  
-  | Op_shrr 
-  | Op_add  
-  | Op_sub  
-  | Op_mul  
-  | Op_div  
-  | Op_mod  
+  | Op_cor
+  | Op_cand
+  | Op_or
+  | Op_and
+  | Op_xor
+  | Op_eq
+  | Op_ne
+  | Op_gt
+  | Op_lt
+  | Op_ge
+  | Op_le
+  | Op_shl
+  | Op_shr
+  | Op_shrr
+  | Op_add
+  | Op_sub
+  | Op_mul
+  | Op_div
+  | Op_mod
 
-type expression_desc = 
+type expression_desc =
   | New of string option * string list * expression list
   | NewArray of Type.t * (expression option) list * expression option
   | Call of expression option * string * expression list
@@ -82,7 +82,7 @@ type expression_desc =
   | VoidClass
   | QN of string list
 
-and expression = 
+and expression =
     {
       edesc : expression_desc;
 (*      eloc : Location.t;
@@ -94,17 +94,17 @@ type switchLabel =
   | Default
 
 type modifier =
-  | Abstract 
-  | Public   
+  | Abstract
+  | Public
   | Protected
-  | Private  
-  | Static   
-  | Final    
+  | Private
+  | Static
+  | Final
   | Strictfp
-  | Transient 
-  | Volatile 
-  | Synchronized 
-  | Native 
+  | Transient
+  | Volatile
+  | Synchronized
+  | Native
 
 type astattribute = {
       mutable amodifiers : modifier list;
@@ -113,7 +113,7 @@ type astattribute = {
       adefault : expression option;
       (*      aloc : Location.t;*)
     }
-      
+
 
 
 
@@ -162,7 +162,7 @@ and astclass = {
 and type_info =
   | Class of astclass
   | Inter
-		 
+
 and initial = {
     static : bool ;
     block : statement list
@@ -191,7 +191,7 @@ let string_of_value = function
   | Char(Some c) -> String.make 1 c
   | Char(None) -> "à"
   | Null -> "null"
-	      
+
 let string_of_assign_op = function
   | Assign  -> "="
   | Ass_add -> "+="
@@ -235,17 +235,17 @@ let string_of_prefix_op = function
   | Op_bnot -> "~"
   | Op_plus -> "+"
 
-		  
+
 let rec string_of_expression_desc = function
-  | New(None,n,al) -> 
+  | New(None,n,al) ->
       "new "^(String.concat "." n)^"("^
       (String.concat "," (List.map string_of_expression al))^
       ")"
-  | New(Some n1,n2,al) -> 
+  | New(Some n1,n2,al) ->
       n1^".new "^(String.concat "." n2)^"("^
       (String.concat "," (List.map string_of_expression al))^
       ")"
-  | If(c,e1,e2) -> 
+  | If(c,e1,e2) ->
       "if "^(string_of_expression c)^" { "^
       (string_of_expression e1)^" } else { "^(string_of_expression e2)^" }"
   | Call(r,m,al) ->
@@ -286,8 +286,8 @@ let rec string_of_expression_desc = function
      | Some e -> (string_of_expression e)^".")^
      (Type.stringOf t)^
        (ListII.concat_map "" (function None -> "[]" | Some e -> "["^(string_of_expression e)^"]") args)
-       
-and string_of_expression e = 
+
+and string_of_expression e =
   let s = string_of_expression_desc e.edesc in
   s(*
     match e.etype with
@@ -309,22 +309,22 @@ let stringOf_arg a =
 	" "^a.pident
 
 let stringOf_modifier = function
-  | Abstract  -> "abstract" 
-  | Public    -> "public"   
+  | Abstract  -> "abstract"
+  | Public    -> "public"
   | Protected -> "protected"
-  | Private   -> "private"  
-  | Static    -> "static"   
-  | Final     -> "final"    
-  | Strictfp  -> "strictfp" 
-  | Transient    -> "transient"   
-  | Volatile     -> "volatile"    
+  | Private   -> "private"
+  | Static    -> "static"
+  | Final     -> "final"
+  | Strictfp  -> "strictfp"
+  | Transient    -> "transient"
+  | Volatile     -> "volatile"
   | Synchronized -> "synchronized"
-  | Native       -> "native"      
+  | Native       -> "native"
 
 let stringOf_sl = function
   | CstExpr e -> "case "^(string_of_expression e)
   | Default -> "default"
-		      
+
 let rec print_switchBody tab switch_label_list stm_list =
      List.iter (fun c -> print_endline(tab^(stringOf_sl c)^":")) switch_label_list;
      List.iter (print_statement (tab^"\t")) stm_list
@@ -392,7 +392,7 @@ and print_statement tab = function
 	  List.iter (print_statement (tab^"  ")) finally
 	end);
      print_endline(tab^"}");
-   
+
 and print_method tab m =
   print_string tab;
   print_string((Type.stringOf m.mreturntype)^" "^m.mname^"(");
@@ -424,11 +424,11 @@ and print_type tab t =
   (match t.info with
    | Class c -> print_class tab c
    | Inter -> ())
-  
+
 let print_package p =
   print_string "package ";
   print_endline (String.concat "." p)
-	       
+
 let print_program p =
   match p.package with
   | None -> ()

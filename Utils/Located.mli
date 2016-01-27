@@ -1,5 +1,5 @@
 (* A located element using the Location module *)
-type 'a t 
+type 'a t
 
 (* Create an new located element *)
 val mk_elem : 'a -> Location.t -> 'a t

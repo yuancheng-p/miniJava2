@@ -3,8 +3,8 @@ let print name print_key print_val hashtbl =
     begin
       if (name <> "") then print_string (name^": ");
       let first = ref true in
-      Hashtbl.iter 
-	(fun key value -> 
+      Hashtbl.iter
+	(fun key value ->
 	  if !first then
 	    first := false
 	  else

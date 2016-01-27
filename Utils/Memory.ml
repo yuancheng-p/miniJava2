@@ -5,8 +5,8 @@ let print name print_val map =
     begin
       if (name <> "") then print_string (name^": ");
       let first = ref true in
-      iter 
-	(fun key value -> 
+      iter
+	(fun key value ->
 	  if !first then
 	    first := false
 	  else

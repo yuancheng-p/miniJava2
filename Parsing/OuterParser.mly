@@ -15,7 +15,7 @@
 /* The tokens */
 /**************/
 %token EOF
-	  
+
 /* Separators */
 %token LBRACE RBRACE LBRACKET RBRACKET
 
@@ -64,9 +64,9 @@ restName:
 classOrInterfaceDeclaration:
   | ml = classModifier* c = classDeclaration {
        let id, info = c in
-       { modifiers = ml ; id = id ; info = info } 
+       { modifiers = ml ; id = id ; info = info }
     }
-						   
+
 %public %inline classModifier:
   | PUBLIC     { Public    }
   | PROTECTED  { Protected }
@@ -78,7 +78,7 @@ classOrInterfaceDeclaration:
 
 %public body(X): LBRACE x=X RBRACE { x }
 %public paren_comma(X): LPAREN l=separated_list(COMMA,X) RPAREN { l }
-			      
+
 %public classDeclaration:
   | CLASS id = IDENTIFIER ext = option(preceded(EXTENDS,classOrInterfaceType)) option(preceded(IMPLEMENTS,separated_list(COMMA,classOrInterfaceType))) cl=body(classContent* ) {
 	let extends = match ext with
@@ -100,7 +100,7 @@ classOrInterfaceDeclaration:
     }
 
 classOrInterfaceType: l=separated_nonempty_list(DOT,IDENTIFIER)  { Type.extract_type l }
-						 
+
 %public aType:
   | t = classOrInterfaceType l = list(pair(LBRACKET,RBRACKET)) {
 	if List.length l > 0 then Array(Ref t,List.length l) else Ref t
@@ -131,7 +131,7 @@ classOrInterfaceType: l=separated_nonempty_list(DOT,IDENTIFIER)  { Type.extract_
 
 interfaceContent:
   | l = modifier* decl = interfaceMemberDecl { }
-    
+
 memberDecl:
   | t=aType vars=separated_nonempty_list(COMMA,variableDeclarator) SEMI {
         `AttList (List.map (fun (id,init) -> { amodifiers = [] ; atype = t ; aname = id ; adefault = init }) vars)
@@ -153,7 +153,7 @@ memberDecl:
     }
   | c = classDeclaration {
        let id, info = c in
-       `Class { modifiers = [] ; id = id ; info = info } 
+       `Class { modifiers = [] ; id = id ; info = info }
     }
 
 interfaceMemberDecl:
@@ -161,9 +161,9 @@ interfaceMemberDecl:
   | VOID id=IDENTIFIER pl=paren_comma(formalParameter) el=loption(throws) SEMI { }
   | r=aType id=IDENTIFIER pl=paren_comma(formalParameter) el=loption(throws) SEMI { }
   | c = classDeclaration { }
-			 
+
 throws: THROWS el=separated_nonempty_list(COMMA,classOrInterfaceType) { el }
-								   
+
 modifier:
   | PUBLIC       { Public    }
   | PROTECTED    { Protected }

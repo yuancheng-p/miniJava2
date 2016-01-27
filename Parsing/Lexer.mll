@@ -5,10 +5,10 @@ open Error
 
 let keyword_table = Hashtbl.create 53
 let _ =
-  List.iter (fun (k,d) -> Hashtbl.add keyword_table k d) 
+  List.iter (fun (k,d) -> Hashtbl.add keyword_table k d)
      KeywordLexer.kw_list
 
-		     
+
 let ident_or_keyword id =
   try Hashtbl.find keyword_table id
   with Not_found -> IDENTIFIER id
@@ -30,7 +30,7 @@ let not_newline_char = [^ '\n' '\r']
 let newline = (['\n' '\r'] | "\r\n")
 let blank = [' ' '\014' '\t' '\012']
 let digit = ['0'-'9']
-let hexdigit = digit | ['a'-'f''A'-'F']	      
+let hexdigit = digit | ['a'-'f''A'-'F']
 let letter = ['a'-'z''A'-'Z']
 let id_char = (letter | digit | '_' | '$')
 let esc_char = ['b' 't' 'n' 'f' 'r' '\"' '\'' '\\' ]
@@ -40,7 +40,7 @@ let int_type = ['l' 'L']
 let exp_char = ['e' 'E']
 let integer = digit+ | '0' hex_type hexdigit+
 let signed_integer = ['+' '-']? integer
-  
+
 rule token = parse
   | newline                 { Location.incr_line lexbuf; token lexbuf }
   | blank +                 { token lexbuf }
@@ -108,12 +108,12 @@ rule token = parse
   | "\'\\u" hexdigit hexdigit hexdigit hexdigit "\'" { CHAR_LIT None }
   | "\'\\" digit digit digit "\'" { CHAR_LIT None }
   | "\""
-      { 
+      {
 	Buffer.reset buff;
         let string_start = lexbuf.lex_start_p in
           string (Location.curr lexbuf) lexbuf;
           lexbuf.lex_start_p <- string_start;
-          STRING (Buffer.contents buff) 
+          STRING (Buffer.contents buff)
       }
   | _ as ch  { illegal_char ch (Location.curr lexbuf) }
 

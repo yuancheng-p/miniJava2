@@ -1,14 +1,14 @@
 open Lexing
 
-type t = 
-    { 
-      loc_start: position; 
-      loc_end: position; 
+type t =
+    {
+      loc_start: position;
+      loc_end: position;
     }
 
-let none = 
-  { 
-    loc_start = dummy_pos; 
+let none =
+  {
+    loc_start = dummy_pos;
     loc_end = dummy_pos;
   }
 
@@ -27,10 +27,10 @@ let init lexbuf fname =
 
 let incr_line lexbuf =
   let pos = lexbuf.lex_curr_p in
-  lexbuf.lex_curr_p <- 
-  { 
-    pos with 
-      pos_lnum = pos.pos_lnum + 1; 
+  lexbuf.lex_curr_p <-
+  {
+    pos with
+      pos_lnum = pos.pos_lnum + 1;
       pos_bol = pos.pos_cnum;
   }
 

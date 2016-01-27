@@ -12,7 +12,7 @@ let rec add_node Node(children_list) elt_child elt_father =
 and add_list children_list elt_child elt_father =
   match children_list with
   | [] -> false, []
-  | (c,subchildren)::other_children when c == elt_father -> 
+  | (c,subchildren)::other_children when c == elt_father ->
      true, ((c,Node((elt_child, Node [])::subchildren))::other_children)
   | (c,subchildren)::other_children ->
      match add (Hierarchy(c,,)) elt_child elt_father with
