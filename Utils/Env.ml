@@ -11,4 +11,6 @@ let define env n t =
     Hashtbl.add result n t;
     result
 
+let add env n t = Hashtbl.add env n t
+
 let iter f = Hashtbl.iter (fun s i -> f (s,i))

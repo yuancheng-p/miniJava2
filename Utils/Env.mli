@@ -14,5 +14,8 @@ val mem : ('a,'b) t -> 'a -> bool
 (* define a key with the value associated *)
 val define : ('a,'b) t -> 'a -> 'b -> ('a,'b) t
 
+(* add a (key:value) pair to the environment *)
+val add : ('a,'b) t -> 'a -> 'b -> unit
+
 (* iterate a function over all the bindings of the environment *)
 val iter : ('a * 'b -> unit) -> ('a,'b) t -> unit
