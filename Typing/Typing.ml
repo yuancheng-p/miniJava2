@@ -1,6 +1,8 @@
 open AST
 open Type
 
+exception Class_Redifinition of string;;
+exception Method_Signiture of string;;
 
 type class_env = {
   parent: ref_type;
@@ -27,15 +29,24 @@ let trim_option_type pkg default =
   | Some p -> p
   | None -> default
 
-
 (* TODO add package *)
+(**
+ * check each class_key(package,classname) if it's redifined, raise error Class_Redifinition
+ * and put the (tpath,class_id) in to the global_env. But here, we don't put methods and atrrs.
+ **)
 let build_classes_names classes_env ast =
+  (* check class redefinition function*)
+  let check_class_redifinition ref_type classes_env =
+    let clfind = Env.mem classes_env ref_type in
+      match clfind with
+      | true -> raise(Class_Redifinition(ref_type.tid))
+      | false -> () in
   let rec parse_asts ast_list =
     match ast_list with
     | [] -> classes_env
     | h::others -> (match h.info with
         | Class c ->
-          (*TODO: check if class id exist*)
+          check_class_redifinition {tpath = (trim_option_type ast.package []); tid = h.id} classes_env;
           (Env.add classes_env
               {tpath = (trim_option_type ast.package []); tid = h.id}
               {parent = c.cparent; methods = Env.initial(); attributes = []});
@@ -55,17 +66,18 @@ let rec mk_t_args arguments l =
  *  methods table (global_env -> class_env -> methods)
  **)
 let build_methods global_env ast =
+  let check_method_signiture_redefined methods method_signiture = 
+    if Env.mem methods method_signiture then raise(Method_Signiture("method redef : "^method_signiture.name))
+  in
   let rec add_methods global_env r_type cmethods =
     match cmethods with
     | [] -> global_env
     | h::others ->
-        print_endline ("TODO: check add and methods:"^r_type.tid^":"^h.mname);
         let cls_env = Env.find global_env r_type
-
-        in
-        let t_args = mk_t_args h.margstype [] (*TODO inline me*)
-        in Env.add cls_env.methods
-            {name=h.mname; args=t_args} {modifiers=[];return_type=h.mreturntype};
+        in let t_args = mk_t_args h.margstype [] (*TODO inline me*)
+        in check_method_signiture_redefined cls_env.methods {name=h.mname; args=t_args};
+        print_endline ("check add and methods:"^r_type.tid^":"^h.mname);
+        Env.add cls_env.methods {name=h.mname; args=t_args} {modifiers=[];return_type=h.mreturntype};
         add_methods global_env r_type others
   (* iterate the ast list *)
   in let rec iter_asts ast_list =
@@ -84,20 +96,28 @@ let build_methods global_env ast =
 
 let str_of_ref_type ref_type = ref_type.tid
 
-let str_of_methods methods = "TODO:print methods table"
+let print_method_signiture method_signiture =
+   print_string method_signiture.name;
+   (List.iter ( fun (targ) -> print_string (" paramlist: "^Type.stringOf targ.tptype^" ") ;() ) method_signiture.args)
+
+let print_methods methods =
+  Env.iter (fun(m_signiture,menv)->print_string "method : " ; print_method_signiture m_signiture;print_endline ""; ()) methods
+
+let str_of_method_env method_env = "method env"  (* will be delete *)
+
+let str_of_methods methods =  "TODO:print methods table" (* replace by print_method , will be delete *)
 
 let str_of_class_env class_env =
   "class_env(parent="
-      ^(String.concat "." class_env.parent.tpath)^": "^class_env.parent.tid
-      ^";methods="^(str_of_methods class_env.methods)
-      ^")\n"
-
+      ^(String.concat "." class_env.parent.tpath)^": "^class_env.parent.tid^")\n"
+      (* ^";methods="^(str_of_methods class_env.methods) *)
 
 let print_classes_env classes_env =
   Env.iter (
     fun (r_type, c_env) ->
       print_string
       (str_of_ref_type r_type ^ " : " ^ str_of_class_env c_env);
+      print_methods c_env.methods;
     ) classes_env
 
 
