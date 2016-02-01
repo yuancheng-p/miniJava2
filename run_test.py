@@ -77,8 +77,10 @@ def main(test_dir=TEST_DIR, test_file=None):
                 if filepath.endswith(".java"):
                     java_files.append(filepath)
     else:
-        java_files = [os.path.join(test_dir, f) for f in os.listdir(test_dir) if f.endswith(".java")
-                        and os.path.isfile(os.path.join(TEST_DIR, f)) and f == test_file]
+        if os.path.isfile(test_file) and test_file.endswith(".java"):
+            java_files.append(test_file)
+        else:
+            print ("'{0}' does not exist or is not a .java file".format(test_file))
 
     print ("testing...")
     map(run_test, java_files)
