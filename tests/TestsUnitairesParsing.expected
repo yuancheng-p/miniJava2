@@ -1,0 +1,83 @@
+successfull parsing
+package tutu.titi.toto
+class I extends Object {
+}
+
+public class A extends Object {
+  Int a1 = 1;
+  int[] a = {3,4,5};
+  Bool a2 = false;
+  String a6 = "jsdjkndjk\njdsdjkf";
+}
+
+abstract class B extends C {
+  B() {
+    super();
+  }
+  A mthis() tuty.A,tre.tr.b {
+    int a;
+    int b;
+    {
+      int c 18;
+      {
+        ;
+      }
+      new A();
+      A.m();
+      a[2].m();
+      a[2][6].m();
+      B.A.m();
+      this.m();
+      super();
+      this();
+      super.m();
+      m();
+      for (int c; c>6;c++) {
+        {
+        }
+      }
+    }
+    tutu.tyty.a=1;
+    tutu.tyty.a op;
+    a(B.this);
+    tutu.a op;
+    a=b=1;
+    return new A();
+    try {
+    } catch (E e)
+      toto;
+    } finally {
+      tutu;
+    }
+    try {
+    } finally {
+      tutu;
+    }
+    try {
+    } catch (E e)
+      toto;
+    }
+  }
+  Int matt4()  {
+    this.ab;
+  }
+}
+
+static private class C extends A {
+}
+
+start typing
+check add and methods:B:mthis
+check add and methods:B:matt4
+--------- env --------
+String : class_env(parent=: Object)
+Object : class_env(parent=: )
+B : class_env(parent=: C)
+method : matt4
+method : mthis
+C : class_env(parent=: A)
+Integer : class_env(parent=: Object)
+Boolean : class_env(parent=: Object)
+A : class_env(parent=: Object)
+I : class_env(parent=: Object)
+end typing

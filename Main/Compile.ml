@@ -8,7 +8,7 @@ let execute lexbuf verbose =
     if verbose then AST.print_program ast;
 
     print_endline "start typing";
-    let t_ast = Typing.typing ast in
+    let t_ast = Typing.typing ast verbose in
     print_endline "end typing";
 
   with
