@@ -1,16 +1,9 @@
-open Option
 open Structure
 open TypedStructure
 open Errors
 
 (**************************************************************************************************)
 (******************** These functions build the classes definition environment ********************)
-
-(* This function checks that a type exists for the given classname, and returns it. *)
-(* The classname is a non-located Structure.classname. *)
-let type_of_classname currentEnv key = 
-	let cls_env = Env.find currentEnv key
-        cls_env.return_type
 
 (* This function checks that a type exists for the given classname, and returns it. *)
 (* The classname is a non-located Structure.classname. *)
