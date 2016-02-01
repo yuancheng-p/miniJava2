@@ -121,7 +121,7 @@ let print_classes_env classes_env =
     ) classes_env
 
 
-let build_global_env ast =
+let build_global_env ast verbose =
   (* Key: ref_type; Value: class_env *)
   let classes_env = Env.initial();
   in
@@ -133,18 +133,20 @@ let build_global_env ast =
       { tpath=[]; tid="Integer" }, { parent = Type.object_type; methods = Env.initial(); attributes = []; };
       { tpath=[]; tid="String" }, { parent = Type.object_type; methods = Env.initial(); attributes = []; };
       { tpath=[]; tid="Boolean" }, { parent = Type.object_type; methods = Env.initial(); attributes = []; }; ];
+
   (*step 1*)
-  print_endline "-------- step 1 ---------";
   build_classes_names classes_env ast;
-  print_classes_env classes_env;
 
   (*step 2*)
-  print_endline "-------- step 2 ---------";
   build_methods classes_env ast;
-  print_classes_env classes_env
+
+  if verbose then
+    let _= print_endline "--------- env --------";
+    in print_classes_env classes_env
 
 
-let typing ast =
-  let env = build_global_env ast
+
+let typing ast verbose =
+  let env = build_global_env ast verbose
   in ()
 
