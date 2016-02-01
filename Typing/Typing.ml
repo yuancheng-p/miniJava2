@@ -1,5 +1,7 @@
 open AST
 open Type
+open TAST
+open Structure
 
 exception Class_Redifinition of string;;
 exception Method_Signiture of string;;
@@ -145,8 +147,44 @@ let build_global_env ast verbose =
     in print_classes_env classes_env
 
 
+let rec type_method_list classesEnv l =
+        let type_method mtype mname=
+                TypedMethod(mtype,mname)
+        in
+        let typed_method m=
+                let mtype=Classname(Type.stringOf m.mreturntype)
+                and mname=m.mname in  
+                type_method mtype mname
+                (*TODO| StaticMethod (c, s, params, e) -> type_method c s params e true*)
+
+        in match l with
+        | [] -> []
+        | t::q -> (typed_method t)::(type_method_list classesEnv q)
+
+let rec type_attr_list classesEnv l =
+        let typed_attr a=
+                let atype=Classname(Type.stringOf a.atype)
+                and aname=a.aname
+                and amodifiers=a.amodifiers in
+		  match a.adefault with
+		    | None -> TypedAttr(atype,aname)
+                    (*TODO | None -> TypedAttr(aname,atype,type_of_classname classesEnv r_type aname)*)
+		    (*TODO| Some e -> type_attr_with_value atype aname e*)
+
+        in match l with
+        | [] -> []
+        | t::q -> (typed_attr t)::(type_attr_list classesEnv q)
 
 let typing ast verbose =
   let env = build_global_env ast verbose
-  in ()
+  in let rec type_rec_structure_tree sub_tree =
+                (* This inner function receives a non-located class_or_expr *)
+                let type_structure t= 
+                        match t.info with 
+                        | Class c -> TypedClassdef(type_attr_list env c.cattributes,type_method_list env c.cmethods)
+                in match sub_tree with
+                | [] -> []
+                | t::q -> type_structure t::(type_rec_structure_tree q)
+   in
+   type_rec_structure_tree ast.type_list
 
