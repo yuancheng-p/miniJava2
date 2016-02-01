@@ -70,8 +70,12 @@ def main(test_dir=TEST_DIR, test_file=None):
 
     java_files = []
     if test_file is None:
-        java_files = [os.path.join(test_dir, f) for f in os.listdir(test_dir) if f.endswith(".java")
-                        and os.path.isfile(os.path.join(TEST_DIR, f))]
+        # also search the sub directories
+        for root, dirs, files in os.walk(test_dir):
+            for f in files:
+                filepath = os.path.join(root, f)
+                if filepath.endswith(".java"):
+                    java_files.append(filepath)
     else:
         java_files = [os.path.join(test_dir, f) for f in os.listdir(test_dir) if f.endswith(".java")
                         and os.path.isfile(os.path.join(TEST_DIR, f)) and f == test_file]
