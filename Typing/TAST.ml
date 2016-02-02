@@ -1,23 +1,43 @@
-type classname =
-    (* Name of an already defined class *)
-  | Classname of string
+type t_value =
+  | TInt of int
+  | TFloat of float
 
+type t_expression_desc =
+  | TVal of t_value
 
-type typed_attr_or_method =
-  | TypedAttr of classname * string
-  (*TODO| TypedAttrWithValue of classname Located.t * string Located.t * typed_expr Located.t * string*)
+type t_expression = {
+      t_edesc : t_expression_desc;
+}
 
-  | TypedMethod of classname * string * string list * Type.t
-  | TypedStaticMethod of classname * string * string list * Type.t
+type t_statement =
+  | TExpr of t_expression
 
-  (*TODO| TypedStaticAttr of classname Located.t * string Located.t * string
-  | TypedStaticAttrWithValue of classname Located.t * string Located.t * typed_expr Located.t * string
-  | TypedStaticMethod of classname Located.t * string Located.t * typed_param Located.t list
-  	* typed_expr Located.t * string
-  *)
+type t_astmethod = {
+
+    t_mbody : t_statement list;
+    t_mreturntype : Type.t;
+
+  (*
+    mutable t_mmodifiers : modifier list;
+    t_mname : string;
+    t_margstype : argument list;
+    t_mthrows : Type.ref_type list;
+    *)
+}
+
+type t_astclass = {
+    t_cmethods : t_astmethod list;
+
+    (*
+    t_cparent : Type.ref_type;
+    t_cattributes : astattribute list;
+    t_cinits : initial list;
+    t_cconsts : astconst list;
+    t_ctypes : asttype list;
+    t_cloc : Location.t; *)
+  }
 
 
 type typed_class_or_expr =
-  (*TODO| TypedClassdef of Type.ref_type * astattribute list * initial list * astconst list * astmethod list * asttype list * Location.t  *)
-  | TypedClassdef of typed_attr_or_method list * typed_attr_or_method list
+  | TClass of t_astclass
 
