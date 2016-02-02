@@ -19,3 +19,9 @@ val add : ('a,'b) t -> 'a -> 'b -> unit
 
 (* iterate a function over all the bindings of the environment *)
 val iter : ('a * 'b -> unit) -> ('a,'b) t -> unit
+
+(* get the hashtabl's keys by list*)
+val hashtbl_keys : ('a, 'b) t -> 'a list
+
+(* get the hashtabl's keys-sorted by list*)
+val sort_hash_key : ('a, 'b) t -> 'a list
