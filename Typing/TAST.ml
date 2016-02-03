@@ -1,6 +1,10 @@
 type t_value =
+  | TString of string
   | TInt of int
   | TFloat of float
+  | TChar of char option
+  | TNull
+  | TBoolean of bool
 
 type t_expression_desc =
   | TVal of t_value

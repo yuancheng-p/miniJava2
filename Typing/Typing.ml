@@ -15,6 +15,10 @@ let type_value v =
   match v with
   | AST.Int i -> TInt(int_of_string i)
   | AST.Float f -> TFloat(float_of_string f)
+  | AST.String s -> TString(s)
+  | AST.Char c -> TChar(c)
+  | AST.Boolean b -> TBoolean(b)
+  | AST.Null -> TNull
 
 
 let type_exprssion_desc edesc =
