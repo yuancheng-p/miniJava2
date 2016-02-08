@@ -21,6 +21,15 @@ type t =
 
 let object_type = { tpath = [] ; tid = "Object" }
 
+let integer_type = { tpath = []; tid = "Integer" }
+
+let boolean_type = { tpath = []; tid = "Boolean" }
+
+let string_type = { tpath = []; tid = "String" }
+
+let null_type = { tpath = []; tid = "null" }
+
+
 let rec array_param = function
   | 0 -> ""
   | n -> "[]"^(array_param (n-1))

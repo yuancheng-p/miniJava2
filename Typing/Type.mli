@@ -21,6 +21,10 @@ type t =
 
 (* The type of Java Object *)
 val object_type: ref_type
+val integer_type: ref_type
+val boolean_type: ref_type
+val string_type: ref_type
+val null_type: ref_type
 
 (* function that create an array of size, if t is already an array it just increase its size *)
 val mk_array : int -> t -> t
