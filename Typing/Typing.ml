@@ -16,6 +16,7 @@ let type_value v =
 let type_expression_desc env edesc =
   match edesc with
   | Val v -> TVal(type_value v)
+  | _ -> TVoidClass (* a small cheat to avoid Match_failure *)
   (* TODO: check and type all the expressions here *)
 
 
@@ -41,23 +42,24 @@ let rec type_statement_list env l =
     match stmt with
     | VarDecl vd_list -> TVarDecl(type_var_decl_list env vd_list)
     | Expr e -> TExpr(type_expression env e)
+    | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
 
   in match l with
     | [] -> []
-    | t::q -> (type_statment t)::(type_statement_list env q)
+    | h::others -> (type_statment h)::(type_statement_list env others)
 
 
-let rec type_method_list env class_curr l =
+let rec type_method_list env l =
   let typed_method m =
     {
-      t_mbody = (type_statement_list env m.mbody);
+      t_mbody = type_statement_list env m.mbody;
       t_mreturntype = m.mreturntype
       (* TODO: t_mname, t_margstype, t_mthrows *)
     }
   in match l with
      | [] -> []
-     | t::q -> (typed_method t)::(type_method_list env class_curr q)
+     | t::q -> (typed_method t)::(type_method_list env q)
 
 
 let typing ast verbose =
@@ -69,12 +71,10 @@ let typing ast verbose =
     let type_asttype asttype =
 
       let type_type_info t =
-        let ref_type = {tpath = []; tid = t.id}
-        in let cur_cls = Env.find env ref_type
-        in match t.info with
+        match t.info with
         | Class c ->
             TClass({
-              t_cmethods = (type_method_list env cur_cls c.cmethods)
+              t_cmethods = type_method_list env c.cmethods
             })
 
       in {
