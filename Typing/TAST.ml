@@ -26,7 +26,7 @@ type t_expression_desc =
   | TArray of t_expression * (t_expression option) list
   | TPost of t_expression * AST.postfix_op
   | TPre of AST.prefix_op * t_expression
-  | TOp of t_expression * AST.infix_op * t_expression
+  | TOp of t_expression * AST.infix_op * t_expression * Type.t
   | TCondOp of t_expression * t_expression * t_expression
   | TCast of Type.t * t_expression
   | TType of Type.t

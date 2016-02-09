@@ -3,6 +3,27 @@ open Type
 open TAST
 open Helper
 
+(* TODO: separate exceptions into a file, handle the error *)
+exception Null_Not_Allowed of string
+exception NotImplemented
+exception SyntaxError
+
+
+let type_of_typed_expr t_e =
+  match t_e.t_edesc with
+  | TOp(e1, op, e2, t) -> t
+  | TVal(v) ->
+      match v with
+      | TInt i -> Primitive(Type.Int)
+      | TFloat f -> Primitive(Type.Float)
+      | TChar c -> Primitive(Type.Char)
+      | TBoolean b -> Primitive(Type.Boolean)
+      | TString s -> Ref(Type.string_type)
+      | TNull -> Ref(Type.null_type)
+  | _ -> print_endline "NotImplemented"; raise(NotImplemented)
+
+
+(* literal types *)
 let type_value v =
   match v with
   | AST.Int i -> TInt(int_of_string i)
@@ -13,13 +34,57 @@ let type_value v =
   | AST.Null -> TNull
 
 
-let type_expression_desc env edesc =
+let rec type_expression_desc env edesc =
   match edesc with
-  | Val v -> TVal(type_value v)
   (* TODO: check and type all the expressions here *)
+  | Val v -> TVal(type_value v)
+  | Op(e1, op, e2) -> type_op env e1 e2 op
+  | _ -> TVoidClass (* a small cheat to avoid Match_failure *)
 
 
-let type_expression env e =
+and type_op env e1 e2 op =
+  let typed_e1 = type_expression env e1;
+  in let typed_e2 = type_expression env e2;
+  in let t1 = type_of_typed_expr typed_e1;
+  in let t2 = type_of_typed_expr typed_e2;
+  in match t1, t2 with
+    | Primitive(p1), Primitive(p2)
+    -> begin
+      (*TODO: more complexe types check *)
+         match p1, p2 with
+         | Int, Int
+         -> TOp(typed_e1, op, typed_e2, Primitive(Type.Int))
+         | Float, _
+         -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
+         | _, Float
+         -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
+         | Float, Float
+         -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
+         | _, _
+         -> print_endline "not implemented"; raise(NotImplemented)
+       end
+
+    | Ref(r1), Ref(r2)
+    -> begin
+         (* String only supports Op_add *)
+         match r1, r2 with
+         | { tpath = []; tid = "String" },
+           { tpath = []; tid = "String" }
+         -> begin
+              match op with
+              | Op_add -> TOp(typed_e1, op, typed_e2, Ref(Type.string_type))
+              | _
+              -> print_endline "action not supported"; raise(NotImplemented)
+            end
+         | _, _
+         -> print_endline "action not supported"; raise(NotImplemented)
+       end
+
+    | _, _ -> print_endline "not implemented"; raise(NotImplemented)
+
+
+
+and type_expression env e =
   {
     t_edesc = type_expression_desc env e.edesc;
   }
@@ -27,10 +92,19 @@ let type_expression env e =
 
 let rec type_var_decl_list env vd_list =
   let type_var_decl env vd =
-    (* TODO: add vars into env *)
     match vd with
-    | (t, s, Some e) -> (t, s, Some (type_expression env e))
-    | (t, s, None) -> (t, s, None)
+    | (t, id, Some e) ->
+        let typed_e = type_expression env e
+        in let t1 = type_of_typed_expr typed_e
+        in if (t = t1) then begin
+          (* TODO: add vars into env *)
+          (t, id, Some (typed_e))
+          end
+        else begin
+          print_endline "type not match in var_decl";
+          raise(SyntaxError)
+          end
+    | (t, id, None) -> (t, id, None)
   in match vd_list with
   | [] -> []
   | h::others -> type_var_decl env h::(type_var_decl_list env others)
@@ -41,23 +115,24 @@ let rec type_statement_list env l =
     match stmt with
     | VarDecl vd_list -> TVarDecl(type_var_decl_list env vd_list)
     | Expr e -> TExpr(type_expression env e)
+    | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
 
   in match l with
     | [] -> []
-    | t::q -> (type_statment t)::(type_statement_list env q)
+    | h::others -> (type_statment h)::(type_statement_list env others)
 
 
-let rec type_method_list env class_curr l =
+let rec type_method_list env l =
   let typed_method m =
     {
-      t_mbody = (type_statement_list env m.mbody);
+      t_mbody = type_statement_list env m.mbody;
       t_mreturntype = m.mreturntype
       (* TODO: t_mname, t_margstype, t_mthrows *)
     }
   in match l with
      | [] -> []
-     | t::q -> (typed_method t)::(type_method_list env class_curr q)
+     | t::q -> (typed_method t)::(type_method_list env q)
 
 
 let typing ast verbose =
@@ -69,12 +144,10 @@ let typing ast verbose =
     let type_asttype asttype =
 
       let type_type_info t =
-        let ref_type = {tpath = []; tid = t.id}
-        in let cur_cls = Env.find env ref_type
-        in match t.info with
+        match t.info with
         | Class c ->
             TClass({
-              t_cmethods = (type_method_list env cur_cls c.cmethods)
+              t_cmethods = type_method_list env c.cmethods
             })
 
       in {

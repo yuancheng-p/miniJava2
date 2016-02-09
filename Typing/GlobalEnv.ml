@@ -109,9 +109,9 @@ let build_global_env ast verbose =
     (fun (r_type, cls_env) ->
       Env.add classes_env r_type cls_env; ())
     [ Type.object_type, { parent = {tpath=[]; tid=""}; methods = Env.initial(); attributes = []; };
-      { tpath=[]; tid="Integer" }, { parent = Type.object_type; methods = Env.initial(); attributes = []; };
-      { tpath=[]; tid="String" }, { parent = Type.object_type; methods = Env.initial(); attributes = []; };
-      { tpath=[]; tid="Boolean" }, { parent = Type.object_type; methods = Env.initial(); attributes = []; }; ];
+      Type.integer_type, { parent = Type.object_type; methods = Env.initial(); attributes = []; };
+      Type.string_type, { parent = Type.object_type; methods = Env.initial(); attributes = []; };
+      Type.boolean_type, { parent = Type.object_type; methods = Env.initial(); attributes = []; }; ];
 
   (*step 1*)
   build_classes_names classes_env ast;
