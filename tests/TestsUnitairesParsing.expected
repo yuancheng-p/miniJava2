@@ -71,6 +71,10 @@ check add and methods:B:mthis
 check add and methods:B:matt4
 --------- env --------
 A : class_env(parent=: Object)
+ attr:  String a6 = "jsdjkndjk\njdsdjkf";
+ attr:  Bool a2 = false;
+ attr:  int[] a = {3,4,5};
+ attr:  Int a1 = 1;
 B : class_env(parent=: C)
 method : matt4
 method : mthis

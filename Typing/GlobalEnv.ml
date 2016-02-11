@@ -28,6 +28,11 @@ let str_of_class_env class_env =
       ^(String.concat "." class_env.parent.tpath)^": "^class_env.parent.tid^")\n"
       (* ^";methods="^(str_of_methods class_env.methods) *)
 
+let print_attributes attributes =
+  List.iter (
+    fun attr ->print_string " attr: "; print_attribute " " attr;
+    ) attributes
+
 
 let print_classes_env classes_env =
   (* get key *)
@@ -37,6 +42,7 @@ let print_classes_env classes_env =
       print_string
       (str_of_ref_type r_type ^ " : " ^ str_of_class_env c_env);
       print_methods c_env.methods;
+      print_attributes c_env.attributes;
     ) s_keys
   (*
   Env.iter (
@@ -75,7 +81,7 @@ let check_extends_circle classes_env =
 	   in check_aclass_extends classes_env visited_table ref_type class_env;()
     ) classes_env
 
-let check_class_env classes_env ast = 
+let check_class_env classes_env ast =
   check_extends_circle classes_env;
   ()
 
@@ -139,6 +145,31 @@ let build_methods global_env ast =
     )
   in iter_asts ast.type_list
 
+let build_attrs global_env ast =
+  (* let check_method_signiture_redefined methods method_signiture =
+    if Env.mem methods method_signiture then raise(Method_Signiture("method redef : "^method_signiture.name))
+  in *)
+  let rec add_attrs global_env r_type attrs cls_env_alist=
+    match attrs with
+    | [] ->let cls_env = Env.find global_env r_type in cls_env.attributes <- cls_env_alist;global_env
+    | h::others ->
+        let cls_env = Env.find global_env r_type
+        in (* todo check *)
+        (* print_endline ("check add and attributes:"^r_type.tid^":"^h.aname); *)
+        add_attrs global_env r_type others (h::cls_env_alist)
+  (* iterate the ast list *)
+  in let rec iter_asts ast_list =
+    match ast_list with
+    | [] -> global_env
+    | h::others -> (match h.info with
+        | Class c ->
+            add_attrs
+                global_env
+                {tpath=[](*(trim_option_type ast.package [])*); tid=h.id} c.cattributes [];
+            iter_asts others
+        | Inter -> global_env
+    )
+  in iter_asts ast.type_list
 
 
 let build_global_env ast verbose =
@@ -159,8 +190,11 @@ let build_global_env ast verbose =
 
   (*step 2*)
   build_methods classes_env ast;
-  
+
   (*step 3*)
+  build_attrs classes_env ast;
+
+  (*step 4*)
   check_class_env classes_env ast;
 
   if verbose then
