@@ -1,0 +1,23 @@
+successfull parsing
+start typing
+check add and methods:A:fooA
+check add and methods:A:fooB
+check add and methods:B:fooA
+check add and methods:B:fooB
+--------- env --------
+A : class_env(parent=: Object)
+method : fooB
+method : fooA
+ attr:  boolean a2 = false;
+ attr:  int[] a = {3,4,5};
+ attr:  int a5 = 1;
+B : class_env(parent=: Object)
+method : fooB
+method : fooA
+ attr:  boolean a2 = false;
+ attr:  int[] a = {3,4,5};
+ attr:  int a5 = 1;
+Boolean : class_env(parent=: Object)
+Integer : class_env(parent=: Object)
+Object : class_env(parent=: )
+String : class_env(parent=: Object)
