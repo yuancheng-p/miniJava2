@@ -4,7 +4,9 @@ open EnvType
 open Helper
 
 exception Class_Redifinition of string;;
+exception Attribute_Redifinition of string;;
 exception Method_Signiture of string;;
+exception Class_Extends of string;;
 
 
 (*************  Printer ************)
@@ -27,17 +29,55 @@ let str_of_class_env class_env =
       ^(String.concat "." class_env.parent.tpath)^": "^class_env.parent.tid^")\n"
       (* ^";methods="^(str_of_methods class_env.methods) *)
 
+let print_attributes attributes =
+  List.iter (
+    fun attr ->print_string " attr: "; print_attribute " " attr;
+    ) attributes
+
 
 let print_classes_env classes_env =
-  Env.iter (
-    fun (r_type, c_env) ->
+  (* get key *)
+  let s_keys = Env.sort_hash_key classes_env in
+  List.iter (fun r_type -> 
+    let c_env = Env.find classes_env r_type in
       print_string
       (str_of_ref_type r_type ^ " : " ^ str_of_class_env c_env);
       print_methods c_env.methods;
-    ) classes_env
-
+      print_attributes c_env.attributes;
+    ) s_keys
 
 (***********************)
+(**
+ *  check if there is a circle when children class extends the parent
+ **)
+let check_extends_circle classes_env =
+  Env.iter (
+    fun (ref_type,class_env) -> (*print_endline (" "^ref_type.tid^" p:"^class_env.parent.tid)*)
+    let visited_table = Env.initial() in
+      let rec check_aclass_extends classes_env visited_table class_key class_env =
+        match class_key with
+        | { tpath = [_] ; tid = "Object" } -> print_string "find type object";()
+        | { tpath = [_] ; tid = "" } -> ()
+        | _ -> (
+          (* print_endline ("now the type"^class_key.tid); *)
+        (List.iter print_string class_env.parent.tpath);
+          let isfind = Env.mem visited_table class_key in
+          match isfind with
+          | true -> raise(Class_Extends("There is a circle with class "^ class_key.tid));()
+          | false -> (
+            try 
+	            (* print_endline ("add to visited_table,the next is"^class_env.parent.tid); *)
+	            Env.add visited_table class_key true; 
+	            check_aclass_extends classes_env visited_table (class_env.parent) (Env.find classes_env class_env.parent) 
+            with Not_found ->())
+        )
+	   in check_aclass_extends classes_env visited_table ref_type class_env;()
+    ) classes_env
+
+let check_class_env classes_env ast =
+  check_extends_circle classes_env;
+  ()
+
 
 (**
  * check each class_key(package,classname) if it's redifined, raise error Class_Redifinition
@@ -55,9 +95,9 @@ let build_classes_names classes_env ast =
     | [] -> classes_env
     | h::others -> (match h.info with
         | Class c ->
-          check_class_redifinition {tpath = (trim_option_type ast.package []); tid = h.id} classes_env;
+          check_class_redifinition {tpath = [] (*(trim_option_type ast.package [])*); tid = h.id} classes_env;
           (Env.add classes_env
-              {tpath = (trim_option_type ast.package []); tid = h.id}
+              {tpath = [] (*(trim_option_type ast.package [])*); tid = h.id}
               {parent = c.cparent; methods = Env.initial(); attributes = []});
           parse_asts others
         | Inter -> classes_env
@@ -92,12 +132,44 @@ let build_methods global_env ast =
         | Class c ->
             add_methods
                 global_env
-                {tpath=(trim_option_type ast.package []); tid=h.id} c.cmethods;
+                {tpath=[](*(trim_option_type ast.package [])*); tid=h.id} c.cmethods;
             iter_asts others
         | Inter -> global_env
     )
   in iter_asts ast.type_list
 
+let build_attrs global_env ast =
+   let rec check_attr_redefined attrs a_attr =
+    match attrs with
+    | [] -> ();
+    | h::others ->
+      begin
+        if h.aname = a_attr.aname then raise(Attribute_Redifinition(a_attr.aname))
+        else check_attr_redefined others a_attr
+      end
+  in
+  let rec add_attrs global_env r_type attrs cls_env_alist=
+    match attrs with
+    | [] ->let cls_env = Env.find global_env r_type in cls_env.attributes <- cls_env_alist;global_env
+    | h::others ->
+      begin
+        let cls_env = Env.find global_env r_type
+        in check_attr_redefined cls_env_alist h;
+        add_attrs global_env r_type others (h::cls_env_alist)
+      end
+  (* iterate the ast list *)
+  in let rec iter_asts ast_list =
+    match ast_list with
+    | [] -> global_env
+    | h::others -> (match h.info with
+        | Class c ->
+            add_attrs
+                global_env
+                {tpath=[](*(trim_option_type ast.package [])*); tid=h.id} c.cattributes [];
+            iter_asts others
+        | Inter -> global_env
+    )
+  in iter_asts ast.type_list
 
 
 let build_global_env ast verbose =
@@ -118,6 +190,12 @@ let build_global_env ast verbose =
 
   (*step 2*)
   build_methods classes_env ast;
+
+  (*step 3*)
+  build_attrs classes_env ast;
+
+  (*step 4*)
+  check_class_env classes_env ast;
 
   if verbose then
     begin
