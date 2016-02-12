@@ -4,6 +4,7 @@ open EnvType
 open Helper
 
 exception Class_Redifinition of string;;
+exception Attribute_Redifinition of string;;
 exception Method_Signiture of string;;
 exception Class_Extends of string;;
 
@@ -44,14 +45,6 @@ let print_classes_env classes_env =
       print_methods c_env.methods;
       print_attributes c_env.attributes;
     ) s_keys
-  (*
-  Env.iter (
-    fun (r_type, c_env) ->
-      print_string
-      (str_of_ref_type r_type ^ " : " ^ str_of_class_env c_env);
-      print_methods c_env.methods;
-    ) classes_env
-    *)
 
 (***********************)
 (**
@@ -146,17 +139,24 @@ let build_methods global_env ast =
   in iter_asts ast.type_list
 
 let build_attrs global_env ast =
-  (* let check_method_signiture_redefined methods method_signiture =
-    if Env.mem methods method_signiture then raise(Method_Signiture("method redef : "^method_signiture.name))
-  in *)
+   let rec check_attr_redefined attrs a_attr =
+    match attrs with
+    | [] -> ();
+    | h::others ->
+      begin
+        if h.aname = a_attr.aname then raise(Attribute_Redifinition(a_attr.aname))
+        else check_attr_redefined others a_attr
+      end
+  in
   let rec add_attrs global_env r_type attrs cls_env_alist=
     match attrs with
     | [] ->let cls_env = Env.find global_env r_type in cls_env.attributes <- cls_env_alist;global_env
     | h::others ->
+      begin
         let cls_env = Env.find global_env r_type
-        in (* todo check *)
-        (* print_endline ("check add and attributes:"^r_type.tid^":"^h.aname); *)
+        in check_attr_redefined cls_env_alist h;
         add_attrs global_env r_type others (h::cls_env_alist)
+      end
   (* iterate the ast list *)
   in let rec iter_asts ast_list =
     match ast_list with

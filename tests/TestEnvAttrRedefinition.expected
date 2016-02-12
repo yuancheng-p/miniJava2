@@ -1,0 +1,14 @@
+successfull parsing
+package tutu.titi.toto
+class I extends Object {
+}
+
+public class A extends Object {
+  Int a1 = 1;
+  int[] a = {3,4,5};
+  Bool a2 = false;
+  String a6 = "jsdjkndjk\njdsdjkf";
+  Book a1;
+}
+
+start typing
