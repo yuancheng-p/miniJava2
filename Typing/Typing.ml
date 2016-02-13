@@ -142,7 +142,13 @@ and type_new env method_env n t params=
     TNew(Some name, qname, t_expression_desc_list params [],
          Ref({tpath=[]; tid=List.hd (List.rev qname)}))
 
-(* Find type of a variable or field *)
+(* Find type of a variable or field
+ *
+ * 1. When this function is used for finding variables in method,
+ * we must provide a method_env where we put variables.
+ * 2. When it's used for finding names during attributes declaration,
+ * we must keep the method_env empty.
+ * *)
 and type_of_name env method_env id =
   if Env.mem method_env id then
     begin
@@ -258,6 +264,30 @@ let rec type_method_args_list env method_env l =
     | [] -> []
     | h::others -> (type_parameter env method_env h)::(type_method_args_list env method_env others)
 
+
+let rec type_attribute_list env l =
+  let type_attr a =
+    match a.adefault with
+    | Some e ->
+      {
+        t_amodifiers = a.amodifiers;
+        t_aname = a.aname;
+        t_atype = a.atype;
+        (* Attention: the empty env below should not be modified *)
+        t_adefault = Some (type_expression env (Env.initial()) e);
+      }
+    | None ->
+      {
+        t_amodifiers = a.amodifiers;
+        t_aname = a.aname;
+        t_atype = a.atype;
+        t_adefault = None;
+      }
+
+  in match l with
+     | [] -> []
+     | t::q -> (type_attr t)::(type_attribute_list env q)
+
 let rec type_method_list env l =
   let typed_method m =
     (* method_env with key: variable_name, value: variable_type (which is not important)
@@ -290,7 +320,8 @@ let typing ast verbose =
         match t.info with
         | Class c ->
             TClass({
-              t_cmethods = type_method_list env (List.rev c.cmethods) (* FIXME *)
+              t_cmethods = type_method_list env (List.rev c.cmethods); (* FIXME *)
+              t_cattributes = type_attribute_list env c.cattributes;
             })
       in {
         t_modifiers = asttype.modifiers;
