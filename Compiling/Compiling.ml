@@ -4,13 +4,23 @@ open Hashtbl
 
 type cls_descriptor = {
   c_parent: ref_type;
-(* TODO: c_attr: string list; *)
+  c_attributes: (string, TAST.t_astattribute) Hashtbl.t;
   (* for the moment we use the name of the method for the key,
    * please replace me by the full signature of the method.
    * *)
   c_methods: (string, TAST.t_astmethod) Hashtbl.t;
 (*  c_methods: (EnvType.t_method_signiture, TAST.t_astmethod) Hashtbl.t; *)
 }
+
+
+let create_attr_table  attr_list =
+  let tb = Hashtbl.create 30;
+  (* TODO: override parent's attributes *)
+  in List.iter (* foreach t_astattribute *)
+  (
+    fun a ->
+      Hashtbl.add tb a.t_aname a
+  ) attr_list; tb
 
 
 let create_methods_table method_list =
@@ -40,7 +50,8 @@ let build_class_descriptors t_ast class_descriptors =
            in let descriptor = {
              c_parent = Type.object_type; (* TODO replace by real parent*)
              (* c_parent = t_astcls.t_cparent *)
-             c_methods = create_methods_table t_astcls.t_cmethods
+             c_methods = create_methods_table t_astcls.t_cmethods;
+             c_attributes = create_attr_table t_astcls.t_cattributes;
            }
            in Hashtbl.add class_descriptors cls_ref descriptor
          end
