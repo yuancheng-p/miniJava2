@@ -167,7 +167,7 @@ let rec type_statement_list env method_env l =
   let type_statment stmt =
     match stmt with
     | VarDecl vd_list -> TVarDecl(type_var_decl_list env method_env vd_list)
-    (*| Expr e -> TExpr(type_expression env method_env e)*)
+    | Expr e -> TExpr(type_expression env e)
     | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
 
