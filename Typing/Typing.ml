@@ -223,10 +223,13 @@ let rec type_var_decl_list env method_env vd_list =
 
 
 let rec type_statement_list env method_env l =
-  let type_statment stmt =
+  let rec type_statment stmt =
     match stmt with
     | VarDecl vd_list -> TVarDecl(type_var_decl_list env method_env vd_list)
     | Expr e -> TExpr(type_expression env method_env e)
+    | Block b -> TBlock(List.map type_statment b)
+    | If(e,s,None) -> TIf(type_expression env method_env e, type_statment s, None)
+    | If(e,s1,Some s2) -> TIf(type_expression env method_env e, type_statment s1, Some (type_statment s2))
     | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
 

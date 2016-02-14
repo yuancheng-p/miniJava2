@@ -1,0 +1,44 @@
+successfull parsing
+package tutu.titi.toto
+public class A extends Object {
+  void fooA()  {
+    if (1>0) {
+      int a2 2;
+    } else {
+      int a3 7;
+    }
+    if (2>1) {
+      boolean a4 true;
+    }
+  }
+  void fooB()  {
+    if (1>0) {
+      {
+        int a2 2;
+        int b2 7;
+      }
+    } else {
+      {
+        int a3 7;
+        int b2 7;
+      }
+    }
+    if (2>1) {
+      {
+        boolean a4 true;
+      }
+    }
+  }
+}
+
+start typing
+check add and methods:A:fooA
+check add and methods:A:fooB
+--------- env --------
+A : class_env(parent=: Object)
+method : fooB
+method : fooA
+Boolean : class_env(parent=: Object)
+Integer : class_env(parent=: Object)
+Object : class_env(parent=: )
+String : class_env(parent=: Object)
