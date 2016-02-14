@@ -2,6 +2,10 @@ open AST
 open Type
 open TAST
 open Helper
+open EnvType
+
+(* global viriable definition *)
+let g_class_ref = ref {tpath=[]; tid=""};;
 
 (* TODO: separate exceptions into a file, handle the error *)
 exception Null_Not_Allowed of string
@@ -9,7 +13,7 @@ exception NotImplemented
 exception SyntaxError
 exception Method_Local_Variable_Redefined of string
 exception UnknownType of string
-
+exception Variable_Not_Defined of string
 
 let type_of_typed_expr t_e =
   match t_e.t_edesc with
@@ -38,18 +42,19 @@ let type_value v =
   | AST.Null -> TNull
 
 
-let rec type_expression_desc env edesc =
+let rec type_expression_desc env method_env edesc =
   match edesc with
   (* TODO: check and type all the expressions here *)
   | Val v -> TVal(type_value v)
-  | Op(e1, op, e2) -> type_op env e1 e2 op
-  | New(n,t,params) -> type_new env n t params
+  | Op(e1, op, e2) -> type_op env method_env e1 e2 op
+  | New(n,t,params) -> type_new env method_env n t params
+  | Name id -> TName(id,(type_of_name env method_env id))
   | _ -> TVoidClass (* a small cheat to avoid Match_failure *)
 
 
-and type_op env e1 e2 op =
-  let typed_e1 = type_expression env e1;
-  in let typed_e2 = type_expression env e2;
+and type_op env method_env e1 e2 op =
+  let typed_e1 = type_expression env method_env e1;
+  in let typed_e2 = type_expression env method_env e2;
   in let t1 = type_of_typed_expr typed_e1;
   in let t2 = type_of_typed_expr typed_e2;
   in match t1, t2 with
@@ -89,13 +94,13 @@ and type_op env e1 e2 op =
 
 
 
-and type_expression env e =
+and type_expression env method_env e =
   {
-    t_edesc = type_expression_desc env e.edesc;
+    t_edesc = type_expression_desc env method_env e.edesc;
   }
 
 
-and type_new env n t params= 
+and type_new env method_env n t params=
   let find_ref_type_in_env ttid = 
     if Env.mem env { tpath = [] ; tid = ttid } then
       { tpath = [] ; tid = ttid }
@@ -108,7 +113,7 @@ and type_new env n t params=
   in let rec t_expression_desc_list exprs l =
     match exprs with
     | [] -> List.rev l
-    | h::others -> type_expression env h::l
+    | h::others -> type_expression env method_env h::l
   in match (n, t, params) with
   | (None, qname, params)->
     check_qname_in_env qname;
@@ -119,6 +124,24 @@ and type_new env n t params=
     (* we ignore the package path, find the ref_type only by id *)
     TNew(Some name, qname, t_expression_desc_list params [],
          Ref({tpath=[]; tid=List.hd (List.rev qname)}))
+
+(* Find type of a variable or field *)
+and type_of_name env method_env id =
+  if Env.mem method_env id then
+    begin
+      let t = Env.find method_env id
+      in t
+    end
+  else
+    begin
+    (* find field in class_env->attributes->aname *)
+    let class_env = Env.find env g_class_ref.contents in
+    let rec has_field attrs id =
+      match attrs with
+      | [] -> raise (Variable_Not_Defined(id))
+      | h::others -> if h.aname=id then h.atype else has_field others id
+    in has_field class_env.attributes id
+    end
 
 
 (* check if a ref type is existe in global_env*)
@@ -140,7 +163,7 @@ let rec type_var_decl_list env method_env vd_list =
     match vd with
     | (t, id, Some e) ->
         check_type_ref_in_env t id env;
-        let typed_e = type_expression env e
+        let typed_e = type_expression env method_env e
         in let t1 = type_of_typed_expr typed_e
         in if (t = t1) then begin
           check_method_local_variable_redefined method_env id;
@@ -167,7 +190,7 @@ let rec type_statement_list env method_env l =
   let type_statment stmt =
     match stmt with
     | VarDecl vd_list -> TVarDecl(type_var_decl_list env method_env vd_list)
-    | Expr e -> TExpr(type_expression env e)
+    | Expr e -> TExpr(type_expression env method_env e)
     | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
 
@@ -201,7 +224,7 @@ let typing ast verbose =
   in let rec type_type_list type_list =
 
     let type_asttype asttype =
-
+      g_class_ref:= {tpath=[];tid=asttype.id};
       let type_type_info t =
         match t.info with
         | Class c ->
