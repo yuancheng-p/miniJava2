@@ -8,12 +8,13 @@ exception Null_Not_Allowed of string
 exception NotImplemented
 exception SyntaxError
 exception Method_Local_Variable_Redefined of string
+exception UnknownType of string
 
 
 let type_of_typed_expr t_e =
   match t_e.t_edesc with
   | TOp(e1, op, e2, t) -> t
-  | TVal(v) ->
+  | TVal(v) -> begin
       match v with
       | TInt i -> Primitive(Type.Int)
       | TFloat f -> Primitive(Type.Float)
@@ -21,6 +22,8 @@ let type_of_typed_expr t_e =
       | TBoolean b -> Primitive(Type.Boolean)
       | TString s -> Ref(Type.string_type)
       | TNull -> Ref(Type.null_type)
+      end
+  | TNew(n, qname, params, t) -> t (*Ref({tpath=[];tid=List.hd (List.rev qname)})*) 
   | _ -> print_endline "NotImplemented"; raise(NotImplemented)
 
 
@@ -40,6 +43,7 @@ let rec type_expression_desc env edesc =
   (* TODO: check and type all the expressions here *)
   | Val v -> TVal(type_value v)
   | Op(e1, op, e2) -> type_op env e1 e2 op
+  | New(n,t,params) -> type_new env n t params
   | _ -> TVoidClass (* a small cheat to avoid Match_failure *)
 
 
@@ -91,6 +95,41 @@ and type_expression env e =
   }
 
 
+and type_new env n t params= 
+  let find_ref_type_in_env ttid = 
+    if Env.mem env { tpath = [] ; tid = ttid } then
+      { tpath = [] ; tid = ttid }
+    else
+      raise(UnknownType(ttid))
+  in let rec check_qname_in_env qname= (* use to ignore package name *)
+    match qname with
+    | [last] -> find_ref_type_in_env last
+    | h::others -> check_qname_in_env others
+  in let rec t_expression_desc_list exprs l =
+    match exprs with
+    | [] -> List.rev l
+    | h::others -> type_expression env h::l
+  in match (n, t, params) with
+  | (None, qname, params)->
+    check_qname_in_env qname;
+    (* check qname exist in env *)
+    TNew(None, qname, t_expression_desc_list params [],
+         Ref({tpath=[]; tid=List.hd (List.rev qname)}))
+  | (Some name, qname, params) ->
+    (* we ignore the package path, find the ref_type only by id *)
+    TNew(Some name, qname, t_expression_desc_list params [],
+         Ref({tpath=[]; tid=List.hd (List.rev qname)}))
+
+
+(* check if a ref type is existe in global_env*)
+let check_type_ref_in_env t id env = 
+  match t with
+  (*| Primitive prim ->  *)
+  | Ref ref_t ->
+    if Env.mem env ref_t = false then
+      raise(UnknownType(stringOf_ref ref_t^"->"^id))
+  | _ -> () (* TODO Array Type.t.Ref*)
+
 let rec type_var_decl_list env method_env vd_list =
 
   let check_method_local_variable_redefined method_env id =
@@ -100,6 +139,7 @@ let rec type_var_decl_list env method_env vd_list =
   in let type_var_decl env method_env vd =
     match vd with
     | (t, id, Some e) ->
+        check_type_ref_in_env t id env;
         let typed_e = type_expression env e
         in let t1 = type_of_typed_expr typed_e
         in if (t = t1) then begin
@@ -111,10 +151,12 @@ let rec type_var_decl_list env method_env vd_list =
           print_endline "type not match in var_decl";
           raise(SyntaxError)
           end
-    | (t, id, None) ->
+    | (t, id, None) -> begin
+      check_type_ref_in_env t id env;
       check_method_local_variable_redefined method_env id;
       Env.add method_env id t;
       (t, id, None)
+      end
 
   in match vd_list with
   | [] -> []

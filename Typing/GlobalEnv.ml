@@ -38,7 +38,7 @@ let print_attributes attributes =
 let print_classes_env classes_env =
   (* get key *)
   let s_keys = Env.sort_hash_key classes_env in
-  List.iter (fun r_type -> 
+  List.iter (fun r_type ->
     let c_env = Env.find classes_env r_type in
       print_string
       (str_of_ref_type r_type ^ " : " ^ str_of_class_env c_env);

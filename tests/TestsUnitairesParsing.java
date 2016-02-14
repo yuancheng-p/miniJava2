@@ -28,7 +28,7 @@ abstract class B extends C {
 	    for (int c; c > 6 ; c++) { }
 	}
 	tutu.tyty.a = 1;
-	final tutu.tyty.a op;
+	//final tutu.tyty.a op;
 	a(B.this);
 	a = b = 1;
 	return new A();
