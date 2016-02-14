@@ -7,6 +7,7 @@ open Helper
 exception Null_Not_Allowed of string
 exception NotImplemented
 exception SyntaxError
+exception Method_Local_Variable_Redefined of string
 
 
 let type_of_typed_expr t_e =
@@ -90,46 +91,62 @@ and type_expression env e =
   }
 
 
-let rec type_var_decl_list env vd_list =
-  let type_var_decl env vd =
+let rec type_var_decl_list env method_env vd_list =
+
+  let check_method_local_variable_redefined method_env id =
+    if Env.mem method_env id then
+      raise(Method_Local_Variable_Redefined("method local variable redefined : "^id))
+
+  in let type_var_decl env method_env vd =
     match vd with
     | (t, id, Some e) ->
         let typed_e = type_expression env e
         in let t1 = type_of_typed_expr typed_e
         in if (t = t1) then begin
-          (* TODO: add vars into env *)
-          (t, id, Some (typed_e))
+          check_method_local_variable_redefined method_env id;
+          Env.add method_env id t1;
+          (t1, id, Some (typed_e))
           end
         else begin
           print_endline "type not match in var_decl";
           raise(SyntaxError)
           end
-    | (t, id, None) -> (t, id, None)
+    | (t, id, None) ->
+      check_method_local_variable_redefined method_env id;
+      Env.add method_env id t;
+      (t, id, None)
+
   in match vd_list with
   | [] -> []
-  | h::others -> type_var_decl env h::(type_var_decl_list env others)
+  | h::others -> type_var_decl env method_env h::(type_var_decl_list env method_env others)
 
 
-let rec type_statement_list env l =
+let rec type_statement_list env method_env l =
   let type_statment stmt =
     match stmt with
-    | VarDecl vd_list -> TVarDecl(type_var_decl_list env vd_list)
-    | Expr e -> TExpr(type_expression env e)
+    | VarDecl vd_list -> TVarDecl(type_var_decl_list env method_env vd_list)
+    (*| Expr e -> TExpr(type_expression env method_env e)*)
     | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
 
   in match l with
     | [] -> []
-    | h::others -> (type_statment h)::(type_statement_list env others)
+    | h::others -> (type_statment h)::(type_statement_list env method_env others)
 
 
 let rec type_method_list env l =
   let typed_method m =
-    {
-      t_mbody = type_statement_list env m.mbody;
-      t_mreturntype = m.mreturntype
+    (* method_env with key: variable_name, value: variable_type (which is not important)
+     * it is used for local variable redifinition check.
+     * *)
+    let method_env = Env.initial();
+    in {
+      t_mbody = type_statement_list env method_env (List.rev m.mbody); (* FIXME *)
+      t_mreturntype = m.mreturntype;
+
       (* TODO: t_mname, t_margstype, t_mthrows *)
     }
+
   in match l with
      | [] -> []
      | t::q -> (typed_method t)::(type_method_list env q)
@@ -147,9 +164,8 @@ let typing ast verbose =
         match t.info with
         | Class c ->
             TClass({
-              t_cmethods = type_method_list env c.cmethods
+              t_cmethods = type_method_list env (List.rev c.cmethods) (* FIXME *)
             })
-
       in {
         t_modifiers = asttype.modifiers;
         t_id = asttype.id;
@@ -162,5 +178,6 @@ let typing ast verbose =
 
   in {
     t_package = ast.package;
-    t_type_list = type_type_list ast.type_list
+    (* FIXME: the type list is parsed inversely during the recursion. *)
+    t_type_list = type_type_list (List.rev ast.type_list)
   }

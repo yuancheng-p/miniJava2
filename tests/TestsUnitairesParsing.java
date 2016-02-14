@@ -30,7 +30,6 @@ abstract class B extends C {
 	tutu.tyty.a = 1;
 	final tutu.tyty.a op;
 	a(B.this);
-	tutu.a op;
 	a = b = 1;
 	return new A();
 	try {
