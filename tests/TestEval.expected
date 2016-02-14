@@ -1,0 +1,14 @@
+successfull parsing
+start typing
+check add and methods:TestOp:test
+check add and methods:TestOp:main
+--------- env --------
+Boolean : class_env(parent=: Object)
+Integer : class_env(parent=: Object)
+Object : class_env(parent=: )
+String : class_env(parent=: Object)
+TestOp : class_env(parent=: Object)
+method : test
+method : main
+end typing
+main
