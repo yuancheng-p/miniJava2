@@ -63,11 +63,11 @@ type t_statement =
   | TTry of t_statement list * (t_argument * t_statement list) list * t_statement list
 
 type t_astmethod = {
+    t_margstype : t_argument list;
     t_mbody : t_statement list;
     t_mreturntype : Type.t; (* TODO: what should we do? *)
 (* TODO  mutable t_mmodifiers : AST.modifier list;
     t_mname : string;
-    t_margstype : t_argument list;
     t_mthrows : Type.ref_type list; *)
 }
 

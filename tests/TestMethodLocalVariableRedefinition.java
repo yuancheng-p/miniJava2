@@ -8,6 +8,12 @@ public class A {
     int e3 = 8;
     int g1 = 6;
     int y1;
+    e3 = 9;
+}
+    public void fooA1(int e1, int g2, boolean y2){
+    e1 = 8;
+    int g1 = 6;
+    int y1;
 }
 // fooB will not pass
     public void fooB(){
@@ -15,6 +21,16 @@ public class A {
     int e13 = 8;
     int q1 = 6;
     boolean q1 = true;
+}
+// fooC will not pass
+    public void fooC(int e1, int e1, boolean y2){
+    int e13 = 8;
+    int q1 = 6;
+}
+// fooD will not pass
+    public void fooD(int e13, int e1, boolean y2){
+    int e13 = 8;
+    int q1 = 6;
 }
 
 }
