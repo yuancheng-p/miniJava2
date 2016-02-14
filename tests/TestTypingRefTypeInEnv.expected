@@ -1,0 +1,12 @@
+successfull parsing
+start typing
+check add and methods:A:method_a
+--------- env --------
+A : class_env(parent=: Object)
+method : method_a
+B : class_env(parent=: Object)
+Boolean : class_env(parent=: Object)
+I : class_env(parent=: Object)
+Integer : class_env(parent=: Object)
+Object : class_env(parent=: )
+String : class_env(parent=: Object)
