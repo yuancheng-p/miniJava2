@@ -190,10 +190,10 @@ let check_type_ref_in_env t id env =
   | _ -> () (* TODO Array Type.t.Ref*)
 
 let rec type_var_decl_list env method_env vd_list =
-
+  (* check if a local variable already existes in method_env including method arguments*)
   let check_method_local_variable_redefined method_env id =
     if Env.mem method_env id then
-      raise(Method_Local_Variable_Redefined("method local variable redefined : "^id))
+      raise(Method_Local_Variable_Redefined("duplicated local variable : "^id))
 
   in let type_var_decl env method_env vd =
     match vd with
@@ -223,10 +223,13 @@ let rec type_var_decl_list env method_env vd_list =
 
 
 let rec type_statement_list env method_env l =
-  let type_statment stmt =
+  let rec type_statment stmt =
     match stmt with
     | VarDecl vd_list -> TVarDecl(type_var_decl_list env method_env vd_list)
     | Expr e -> TExpr(type_expression env method_env e)
+    | Block b -> TBlock(List.map type_statment b)
+    | If(e,s,None) -> TIf(type_expression env method_env e, type_statment s, None)
+    | If(e,s1,Some s2) -> TIf(type_expression env method_env e, type_statment s1, Some (type_statment s2))
     | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
 
@@ -234,6 +237,26 @@ let rec type_statement_list env method_env l =
     | [] -> []
     | h::others -> (type_statment h)::(type_statement_list env method_env others)
 
+let rec type_method_args_list env method_env l =
+  let check_method_local_variable_redefined method_env id =
+    if Env.mem method_env id then
+      raise(Method_Local_Variable_Redefined("duplicated parameter: "^id))
+
+  in let type_parameter env method_env pvd =
+    begin
+    check_type_ref_in_env pvd.ptype pvd.pident env;
+    check_method_local_variable_redefined method_env pvd.pident;
+    Env.add method_env pvd.pident pvd.ptype;
+    {
+      t_final = pvd.final;
+      t_vararg = pvd.vararg;
+      t_ptype = pvd.ptype;
+      t_pident = pvd.pident;
+    }
+    end
+  in match l with
+    | [] -> []
+    | h::others -> (type_parameter env method_env h)::(type_method_args_list env method_env others)
 
 let rec type_method_list env l =
   let typed_method m =
@@ -242,10 +265,12 @@ let rec type_method_list env l =
      * *)
     let method_env = Env.initial();
     in {
-      t_mbody = type_statement_list env method_env (List.rev m.mbody); (* FIXME *)
+      t_mmodifiers = m.mmodifiers;
+      t_mname = m.mname;
       t_mreturntype = m.mreturntype;
-
-      (* TODO: t_mname, t_margstype, t_mthrows *)
+      t_margstype = type_method_args_list env method_env m.margstype;
+      t_mbody = type_statement_list env method_env (List.rev m.mbody); (* FIXME *)
+      (* TODO: t_mthrows *)
     }
 
   in match l with
