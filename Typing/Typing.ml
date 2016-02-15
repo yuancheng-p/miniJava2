@@ -265,11 +265,12 @@ let rec type_method_list env l =
      * *)
     let method_env = Env.initial();
     in {
+      t_mmodifiers = m.mmodifiers;
+      t_mname = m.mname;
+      t_mreturntype = m.mreturntype;
       t_margstype = type_method_args_list env method_env m.margstype;
       t_mbody = type_statement_list env method_env (List.rev m.mbody); (* FIXME *)
-      t_mreturntype = m.mreturntype;
-
-      (* TODO: t_mname, t_mthrows *)
+      (* TODO: t_mthrows *)
     }
 
   in match l with
