@@ -15,8 +15,8 @@ type t_value =
 
 type t_expression_desc =
   | TVal of t_value
-  | TName of string
-  | TAssignExp of t_expression * AST.assign_op * t_expression
+  | TName of string * Type.t
+  | TAssignExp of t_expression * AST.assign_op * t_expression * Type.t
   | TNew of string option * string list * t_expression list * Type.t
   | TNewArray of Type.t * (t_expression option) list * t_expression option
   | TCall of t_expression option * string * t_expression list
