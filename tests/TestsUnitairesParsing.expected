@@ -37,7 +37,6 @@ abstract class B extends C {
         }
       }
     }
-    tutu.tyty.a=1;
     a(B.this);
     a=b=1;
     return new A();

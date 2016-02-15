@@ -14,6 +14,20 @@ exception SyntaxError
 exception Method_Local_Variable_Redefined of string
 exception UnknownType of string
 exception Variable_Not_Defined of string
+exception Type_Mismatch of string
+
+(* to know if ref_type1 is parent of ref_type2 *)
+let rec is_parent_of env r1 r2 =
+  (* r1 unchange , find r2 -> class_env -> parent *)
+  match r1 with
+  | { tpath = [] ; tid = "Object" } -> true
+  | _ -> begin
+    match r2 with
+    | { tpath = [] ; tid = "Object" } -> false
+    | _ -> let class_env_r2 = Env.find env r2 in
+      if r1.tid = class_env_r2.parent.tid then true
+      else is_parent_of env r1 class_env_r2.parent
+    end
 
 let type_of_typed_expr t_e =
   match t_e.t_edesc with
@@ -28,6 +42,8 @@ let type_of_typed_expr t_e =
       | TNull -> Ref(Type.null_type)
       end
   | TNew(n, qname, params, t) -> t (*Ref({tpath=[];tid=List.hd (List.rev qname)})*) 
+  | TAssignExp(e1,assign_op,e2,t) -> t
+  | TName(id, t) -> t
   | _ -> print_endline "NotImplemented"; raise(NotImplemented)
 
 
@@ -49,6 +65,7 @@ let rec type_expression_desc env method_env edesc =
   | Op(e1, op, e2) -> type_op env method_env e1 e2 op
   | New(n,t,params) -> type_new env method_env n t params
   | Name id -> TName(id,(type_of_name env method_env id))
+  | AssignExp(e1,assign_op,e2) -> type_assign_exp env method_env e1 assign_op e2
   | _ -> TVoidClass (* a small cheat to avoid Match_failure *)
 
 
@@ -143,6 +160,25 @@ and type_of_name env method_env id =
     in has_field class_env.attributes id
     end
 
+(* compare type of e1 and e2, return the type of e1 , the extends is considered*)
+and type_assign_exp env method_env e1 assign_op e2 =
+  let typed_e1 = type_expression env method_env e1
+  and typed_e2 = type_expression env method_env e2
+  in let t1 = type_of_typed_expr typed_e1
+  and t2 = type_of_typed_expr typed_e2 in
+  if t1 = t2 then TAssignExp(typed_e1,assign_op,typed_e2,t1)
+  else
+    (* TODO add some other primitive type support *)
+    match t1,t2 with
+    | Primitive(p1), Primitive(p2) -> begin
+      match p1,p2 with
+      | Float,Int -> TAssignExp(typed_e1,assign_op,typed_e2,t1)
+      | Float,Char -> TAssignExp(typed_e1,assign_op,typed_e2,t1)
+      | _, _ -> raise(Type_Mismatch(Type.stringOf t1^" and "^Type.stringOf t2))
+      end (* the real type of object can only be known during the run time *)
+    | Ref(r1), Ref(r2) -> if is_parent_of env r1 r2 then TAssignExp(typed_e1,assign_op,typed_e2,t1) 
+    else 
+      raise(Type_Mismatch(Type.stringOf t1^" and "^Type.stringOf t2))
 
 (* check if a ref type is existe in global_env*)
 let check_type_ref_in_env t id env = 
