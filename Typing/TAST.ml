@@ -43,7 +43,7 @@ and t_expression = {
 }
 
 type t_astattribute = {
-      mutable amodifiers : AST.modifier list;
+      mutable t_amodifiers : AST.modifier list;
       t_aname : string;
       t_atype : Type.t;
       t_adefault : t_expression option;
@@ -82,8 +82,8 @@ type t_astconst = {
 
 type t_astclass = {
     t_cmethods : t_astmethod list;
-(* TODO  t_cparent : Type.ref_type;
     t_cattributes : t_astattribute list;
+(* TODO  t_cparent : Type.ref_type;
     t_cinits : t_initial list;
     t_cconsts : t_astconst list;
     t_ctypes : t_asttype list;

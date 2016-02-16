@@ -9,12 +9,14 @@ let g_class_ref = ref {tpath=[]; tid=""};;
 
 (* TODO: separate exceptions into a file, handle the error *)
 exception Null_Not_Allowed of string
-exception NotImplemented
+exception Action_Not_Supported of string
+exception NotImplemented of string
 exception SyntaxError
 exception Method_Local_Variable_Redefined of string
 exception UnknownType of string
 exception Variable_Not_Defined of string
 exception Type_Mismatch of string
+
 
 (* to know if ref_type1 is parent of ref_type2 *)
 let rec is_parent_of env r1 r2 =
@@ -28,6 +30,63 @@ let rec is_parent_of env r1 r2 =
       if r1.tid = class_env_r2.parent.tid then true
       else is_parent_of env r1 class_env_r2.parent
     end
+
+
+let raise_type_mismatch t1 t2 =
+  raise(Type_Mismatch(Type.stringOf t1^" and "^ Type.stringOf t2))
+
+
+(* check if type t1 is compatible with type t2.
+ * return t1 if compatible, raise Type_Mismatch exception otherwise.
+ * *)
+let check_assignment_type env t1 t2 =
+  if t1 = t2 then t1
+  else
+    match t1, t2 with
+    | Ref(r1), Ref(r2) ->
+      (* the real type of object can only be known during the runtime *)
+      if is_parent_of env r1 r2 then
+        t1
+      else
+        raise_type_mismatch t1 t2
+    | Primitive(p1), Primitive(p2) -> begin
+      match p1 with
+      | Double -> begin match p2 with
+        | Boolean -> raise_type_mismatch t1 t2
+        | _ -> t1
+        end
+      | Float -> begin match p2 with
+        | Boolean | Double -> raise_type_mismatch t1 t2
+        | _ -> t1
+        end
+      | Long -> begin match p2 with
+        | Boolean | Double | Float -> raise_type_mismatch t1 t2
+        | _ -> t1
+        end
+      | Int -> begin match p2 with
+        | Boolean | Double | Float | Long -> raise_type_mismatch t1 t2
+        | _ -> t1
+        end
+      | Short -> begin match p2 with
+        | Short | Byte -> t1
+        | _ -> raise_type_mismatch t1 t2
+        end
+      | Byte -> begin match p2 with
+        | Byte -> t1
+        | _ -> raise_type_mismatch t1 t2
+        end
+      | Boolean -> begin match p2 with
+        | Boolean -> t1
+        | _ -> raise_type_mismatch t1 t2
+        end
+      | Char -> begin match p2 with
+        | Char -> t1
+        | _ -> raise_type_mismatch t1 t2
+        end
+      end
+    (* TODO: boxing and unboxing *)
+    | _, _ -> raise_type_mismatch t1 t2
+
 
 let type_of_typed_expr t_e =
   match t_e.t_edesc with
@@ -44,7 +103,7 @@ let type_of_typed_expr t_e =
   | TNew(n, qname, params, t) -> t (*Ref({tpath=[];tid=List.hd (List.rev qname)})*) 
   | TAssignExp(e1,assign_op,e2,t) -> t
   | TName(id, t) -> t
-  | _ -> print_endline "NotImplemented"; raise(NotImplemented)
+  | _ -> raise(NotImplemented("type_of_typed_expr"))
 
 
 (* literal types *)
@@ -88,7 +147,7 @@ and type_op env method_env e1 e2 op =
          | Float, Float
          -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
          | _, _
-         -> print_endline "not implemented"; raise(NotImplemented)
+         -> raise(NotImplemented("TOp"))
        end
 
     | Ref(r1), Ref(r2)
@@ -101,13 +160,13 @@ and type_op env method_env e1 e2 op =
               match op with
               | Op_add -> TOp(typed_e1, op, typed_e2, Ref(Type.string_type))
               | _
-              -> print_endline "action not supported"; raise(NotImplemented)
+              -> raise(Action_Not_Supported("string only support add operation"))
             end
          | _, _
-         -> print_endline "action not supported"; raise(NotImplemented)
+         -> raise(Action_Not_Supported("ref_type does not support operators"))
        end
 
-    | _, _ -> print_endline "not implemented"; raise(NotImplemented)
+    | _, _ -> raise(NotImplemented("type_op"))
 
 
 
@@ -142,7 +201,13 @@ and type_new env method_env n t params=
     TNew(Some name, qname, t_expression_desc_list params [],
          Ref({tpath=[]; tid=List.hd (List.rev qname)}))
 
-(* Find type of a variable or field *)
+(* Find type of a variable or field
+ *
+ * 1. When this function is used for finding variables in method,
+ * we must provide a method_env where we put variables.
+ * 2. When it's used for finding names during attributes declaration,
+ * we must keep the method_env empty.
+ * *)
 and type_of_name env method_env id =
   if Env.mem method_env id then
     begin
@@ -160,25 +225,15 @@ and type_of_name env method_env id =
     in has_field class_env.attributes id
     end
 
-(* compare type of e1 and e2, return the type of e1 , the extends is considered*)
+
 and type_assign_exp env method_env e1 assign_op e2 =
   let typed_e1 = type_expression env method_env e1
   and typed_e2 = type_expression env method_env e2
   in let t1 = type_of_typed_expr typed_e1
   and t2 = type_of_typed_expr typed_e2 in
-  if t1 = t2 then TAssignExp(typed_e1,assign_op,typed_e2,t1)
-  else
-    (* TODO add some other primitive type support *)
-    match t1,t2 with
-    | Primitive(p1), Primitive(p2) -> begin
-      match p1,p2 with
-      | Float,Int -> TAssignExp(typed_e1,assign_op,typed_e2,t1)
-      | Float,Char -> TAssignExp(typed_e1,assign_op,typed_e2,t1)
-      | _, _ -> raise(Type_Mismatch(Type.stringOf t1^" and "^Type.stringOf t2))
-      end (* the real type of object can only be known during the run time *)
-    | Ref(r1), Ref(r2) -> if is_parent_of env r1 r2 then TAssignExp(typed_e1,assign_op,typed_e2,t1) 
-    else 
-      raise(Type_Mismatch(Type.stringOf t1^" and "^Type.stringOf t2))
+  let t = check_assignment_type env t1 t2
+  in TAssignExp(typed_e1, assign_op, typed_e2, t)
+
 
 (* check if a ref type is existe in global_env*)
 let check_type_ref_in_env t id env = 
@@ -258,6 +313,31 @@ let rec type_method_args_list env method_env l =
     | [] -> []
     | h::others -> (type_parameter env method_env h)::(type_method_args_list env method_env others)
 
+
+let rec type_attribute_list env l =
+  let type_attr a =
+    match a.adefault with
+    | Some e ->
+        begin
+          (* Attention: the empty env below should not be modified *)
+          let typed_e = type_expression env (Env.initial()) e in
+          let t = type_of_typed_expr typed_e in
+          let _ = check_assignment_type env a.atype t;
+          in {
+              t_amodifiers = a.amodifiers; t_aname = a.aname;
+              t_atype = a.atype; t_adefault = Some (typed_e);
+          }
+        end
+    | None ->
+      {
+        t_amodifiers = a.amodifiers; t_aname = a.aname;
+        t_atype = a.atype; t_adefault = None;
+      }
+
+  in match l with
+     | [] -> []
+     | t::q -> (type_attr t)::(type_attribute_list env q)
+
 let rec type_method_list env l =
   let typed_method m =
     (* method_env with key: variable_name, value: variable_type (which is not important)
@@ -290,7 +370,8 @@ let typing ast verbose =
         match t.info with
         | Class c ->
             TClass({
-              t_cmethods = type_method_list env (List.rev c.cmethods) (* FIXME *)
+              t_cmethods = type_method_list env (List.rev c.cmethods); (* FIXME *)
+              t_cattributes = type_attribute_list env c.cattributes;
             })
       in {
         t_modifiers = asttype.modifiers;
