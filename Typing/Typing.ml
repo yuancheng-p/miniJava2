@@ -91,15 +91,7 @@ let check_assignment_type env t1 t2 =
 let type_of_typed_expr t_e =
   match t_e.t_edesc with
   | TOp(e1, op, e2, t) -> t
-  | TVal(v) -> begin
-      match v with
-      | TInt i -> Primitive(Type.Int)
-      | TFloat f -> Primitive(Type.Float)
-      | TChar c -> Primitive(Type.Char)
-      | TBoolean b -> Primitive(Type.Boolean)
-      | TString s -> Ref(Type.string_type)
-      | TNull -> Ref(Type.null_type)
-      end
+  | TVal(v, t) -> t
   | TNew(n, qname, params, t) -> t (*Ref({tpath=[];tid=List.hd (List.rev qname)})*) 
   | TAssignExp(e1,assign_op,e2,t) -> t
   | TName(id, t) -> t
@@ -109,18 +101,18 @@ let type_of_typed_expr t_e =
 (* literal types *)
 let type_value v =
   match v with
-  | AST.Int i -> TInt(int_of_string i)
-  | AST.Float f -> TFloat(float_of_string f)
-  | AST.String s -> TString(s)
-  | AST.Char c -> TChar(c)
-  | AST.Boolean b -> TBoolean(b)
-  | AST.Null -> TNull
+  | AST.Int i -> TVal(TInt(int_of_string i), Primitive(Type.Int))
+  | AST.Float f -> TVal(TFloat(float_of_string f), Primitive(Type.Float))
+  | AST.String s -> TVal(TString(s), Ref(Type.string_type))
+  | AST.Char c -> TVal(TChar(c), Primitive(Type.Char))
+  | AST.Boolean b -> TVal(TBoolean(b), Primitive(Type.Boolean))
+  | AST.Null -> TVal(TNull, Ref(Type.null_type))
 
 
 let rec type_expression_desc env method_env edesc =
   match edesc with
   (* TODO: check and type all the expressions here *)
-  | Val v -> TVal(type_value v)
+  | Val v -> type_value v
   | Op(e1, op, e2) -> type_op env method_env e1 e2 op
   | New(n,t,params) -> type_new env method_env n t params
   | Name id -> TName(id,(type_of_name env method_env id))
