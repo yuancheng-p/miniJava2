@@ -36,11 +36,19 @@ let raise_type_mismatch t1 t2 =
   raise(Type_Mismatch(Type.stringOf t1^" and "^ Type.stringOf t2))
 
 
-(* Assignment: p1 <= p2;
- * check if p2 is compatible with p1, and return the final type
+(* check if type t1 is compatible with type t2.
+ * return t1 if compatible, raise Type_Mismatch exception otherwise.
  * *)
-let check_primitive_assignment_type t1 t2 =
-    match t1,t2 with
+let check_assignment_type env t1 t2 =
+  if t1 = t2 then t1
+  else
+    match t1, t2 with
+    | Ref(r1), Ref(r2) ->
+      (* the real type of object can only be known during the runtime *)
+      if is_parent_of env r1 r2 then
+        t1
+      else
+        raise_type_mismatch t1 t2
     | Primitive(p1), Primitive(p2) -> begin
       match p1 with
       | Double -> begin match p2 with
@@ -76,6 +84,8 @@ let check_primitive_assignment_type t1 t2 =
         | _ -> raise_type_mismatch t1 t2
         end
       end
+    (* TODO: boxing and unboxing *)
+    | _, _ -> raise_type_mismatch t1 t2
 
 
 let type_of_typed_expr t_e =
@@ -215,23 +225,15 @@ and type_of_name env method_env id =
     in has_field class_env.attributes id
     end
 
-(* compare type of e1 and e2, return the type of e1 , the extends is considered*)
+
 and type_assign_exp env method_env e1 assign_op e2 =
   let typed_e1 = type_expression env method_env e1
   and typed_e2 = type_expression env method_env e2
   in let t1 = type_of_typed_expr typed_e1
   and t2 = type_of_typed_expr typed_e2 in
-  if t1 = t2 then TAssignExp(typed_e1,assign_op,typed_e2,t1)
-  else
-    (* TODO add some other primitive type support *)
-    match t1,t2 with
-    | Primitive(p1), Primitive(p2) ->
-        let t = check_primitive_assignment_type t1 t2
-        in TAssignExp(typed_e1, assign_op, typed_e2, t)
-    (* the real type of object can only be known during the runtime *)
-    | Ref(r1), Ref(r2) -> if is_parent_of env r1 r2 then TAssignExp(typed_e1,assign_op,typed_e2,t1) 
-    else 
-       raise_type_mismatch t1 t2
+  let t = check_assignment_type env t1 t2
+  in TAssignExp(typed_e1, assign_op, typed_e2, t)
+
 
 (* check if a ref type is existe in global_env*)
 let check_type_ref_in_env t id env = 
@@ -319,26 +321,12 @@ let rec type_attribute_list env l =
         begin
           (* Attention: the empty env below should not be modified *)
           let typed_e = type_expression env (Env.initial()) e in
-          let t = type_of_typed_expr typed_e
-          and ret = {
+          let t = type_of_typed_expr typed_e in
+          let _ = check_assignment_type env a.atype t;
+          in {
               t_amodifiers = a.amodifiers; t_aname = a.aname;
               t_atype = a.atype; t_adefault = Some (typed_e);
-            } in
-          if a.atype = t then
-            ret
-          else begin
-            match a.atype, t with
-            | Primitive (p1), Primitive (p2) ->
-              check_primitive_assignment_type a.atype t;
-              ret
-            | Ref(r1), Ref(r2) ->
-              if is_parent_of env r1 r2 then
-                ret
-              else
-                raise_type_mismatch a.atype t
-            | _, _ ->
-                raise_type_mismatch a.atype t
-          end
+          }
         end
     | None ->
       {
