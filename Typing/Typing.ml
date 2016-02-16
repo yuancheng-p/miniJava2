@@ -9,12 +9,14 @@ let g_class_ref = ref {tpath=[]; tid=""};;
 
 (* TODO: separate exceptions into a file, handle the error *)
 exception Null_Not_Allowed of string
-exception NotImplemented
+exception Action_Not_Supported of string
+exception NotImplemented of string
 exception SyntaxError
 exception Method_Local_Variable_Redefined of string
 exception UnknownType of string
 exception Variable_Not_Defined of string
 exception Type_Mismatch of string
+
 
 (* to know if ref_type1 is parent of ref_type2 *)
 let rec is_parent_of env r1 r2 =
@@ -28,6 +30,53 @@ let rec is_parent_of env r1 r2 =
       if r1.tid = class_env_r2.parent.tid then true
       else is_parent_of env r1 class_env_r2.parent
     end
+
+
+let raise_type_mismatch t1 t2 =
+  raise(Type_Mismatch(Type.stringOf t1^" and "^ Type.stringOf t2))
+
+
+(* Assignment: p1 <= p2;
+ * check if p2 is compatible with p1, and return the final type
+ * *)
+let check_primitive_assignment_type t1 t2 =
+    match t1,t2 with
+    | Primitive(p1), Primitive(p2) -> begin
+      match p1 with
+      | Double -> begin match p2 with
+        | Boolean -> raise_type_mismatch t1 t2
+        | _ -> t1
+        end
+      | Float -> begin match p2 with
+        | Boolean | Double -> raise_type_mismatch t1 t2
+        | _ -> t1
+        end
+      | Long -> begin match p2 with
+        | Boolean | Double | Float -> raise_type_mismatch t1 t2
+        | _ -> t1
+        end
+      | Int -> begin match p2 with
+        | Boolean | Double | Float | Long -> raise_type_mismatch t1 t2
+        | _ -> t1
+        end
+      | Short -> begin match p2 with
+        | Short | Byte -> t1
+        | _ -> raise_type_mismatch t1 t2
+        end
+      | Byte -> begin match p2 with
+        | Byte -> t1
+        | _ -> raise_type_mismatch t1 t2
+        end
+      | Boolean -> begin match p2 with
+        | Boolean -> t1
+        | _ -> raise_type_mismatch t1 t2
+        end
+      | Char -> begin match p2 with
+        | Char -> t1
+        | _ -> raise_type_mismatch t1 t2
+        end
+      end
+
 
 let type_of_typed_expr t_e =
   match t_e.t_edesc with
@@ -44,7 +93,7 @@ let type_of_typed_expr t_e =
   | TNew(n, qname, params, t) -> t (*Ref({tpath=[];tid=List.hd (List.rev qname)})*) 
   | TAssignExp(e1,assign_op,e2,t) -> t
   | TName(id, t) -> t
-  | _ -> print_endline "NotImplemented"; raise(NotImplemented)
+  | _ -> raise(NotImplemented("type_of_typed_expr"))
 
 
 (* literal types *)
@@ -88,7 +137,7 @@ and type_op env method_env e1 e2 op =
          | Float, Float
          -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
          | _, _
-         -> print_endline "not implemented"; raise(NotImplemented)
+         -> raise(NotImplemented("TOp"))
        end
 
     | Ref(r1), Ref(r2)
@@ -101,13 +150,13 @@ and type_op env method_env e1 e2 op =
               match op with
               | Op_add -> TOp(typed_e1, op, typed_e2, Ref(Type.string_type))
               | _
-              -> print_endline "action not supported"; raise(NotImplemented)
+              -> raise(Action_Not_Supported("string only support add operation"))
             end
          | _, _
-         -> print_endline "action not supported"; raise(NotImplemented)
+         -> raise(Action_Not_Supported("ref_type does not support operators"))
        end
 
-    | _, _ -> print_endline "not implemented"; raise(NotImplemented)
+    | _, _ -> raise(NotImplemented("type_op"))
 
 
 
@@ -176,15 +225,13 @@ and type_assign_exp env method_env e1 assign_op e2 =
   else
     (* TODO add some other primitive type support *)
     match t1,t2 with
-    | Primitive(p1), Primitive(p2) -> begin
-      match p1,p2 with
-      | Float,Int -> TAssignExp(typed_e1,assign_op,typed_e2,t1)
-      | Float,Char -> TAssignExp(typed_e1,assign_op,typed_e2,t1)
-      | _, _ -> raise(Type_Mismatch(Type.stringOf t1^" and "^Type.stringOf t2))
-      end (* the real type of object can only be known during the run time *)
+    | Primitive(p1), Primitive(p2) ->
+        let t = check_primitive_assignment_type t1 t2
+        in TAssignExp(typed_e1, assign_op, typed_e2, t)
+    (* the real type of object can only be known during the runtime *)
     | Ref(r1), Ref(r2) -> if is_parent_of env r1 r2 then TAssignExp(typed_e1,assign_op,typed_e2,t1) 
     else 
-      raise(Type_Mismatch(Type.stringOf t1^" and "^Type.stringOf t2))
+       raise_type_mismatch t1 t2
 
 (* check if a ref type is existe in global_env*)
 let check_type_ref_in_env t id env = 
@@ -269,19 +316,34 @@ let rec type_attribute_list env l =
   let type_attr a =
     match a.adefault with
     | Some e ->
-      {
-        t_amodifiers = a.amodifiers;
-        t_aname = a.aname;
-        t_atype = a.atype;
-        (* Attention: the empty env below should not be modified *)
-        t_adefault = Some (type_expression env (Env.initial()) e);
-      }
+        begin
+          (* Attention: the empty env below should not be modified *)
+          let typed_e = type_expression env (Env.initial()) e in
+          let t = type_of_typed_expr typed_e
+          and ret = {
+              t_amodifiers = a.amodifiers; t_aname = a.aname;
+              t_atype = a.atype; t_adefault = Some (typed_e);
+            } in
+          if a.atype = t then
+            ret
+          else begin
+            match a.atype, t with
+            | Primitive (p1), Primitive (p2) ->
+              check_primitive_assignment_type a.atype t;
+              ret
+            | Ref(r1), Ref(r2) ->
+              if is_parent_of env r1 r2 then
+                ret
+              else
+                raise_type_mismatch a.atype t
+            | _, _ ->
+                raise_type_mismatch a.atype t
+          end
+        end
     | None ->
       {
-        t_amodifiers = a.amodifiers;
-        t_aname = a.aname;
-        t_atype = a.atype;
-        t_adefault = None;
+        t_amodifiers = a.amodifiers; t_aname = a.aname;
+        t_atype = a.atype; t_adefault = None;
       }
 
   in match l with
