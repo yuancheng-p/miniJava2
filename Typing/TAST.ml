@@ -14,7 +14,7 @@ type t_value =
   | TBoolean of bool
 
 type t_expression_desc =
-  | TVal of t_value
+  | TVal of t_value * Type.t
   | TName of string * Type.t
   | TAssignExp of t_expression * AST.assign_op * t_expression * Type.t
   | TNew of string option * string list * t_expression list * Type.t
