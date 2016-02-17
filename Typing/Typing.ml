@@ -227,7 +227,7 @@ and type_assign_exp env method_env e1 assign_op e2 =
   in TAssignExp(typed_e1, assign_op, typed_e2, t)
 
 
-(* check if a ref type is existe in global_env*)
+(* check if a ref type exists in global_env*)
 let check_type_ref_in_env t id env = 
   match t with
   (*| Primitive prim ->  *)
@@ -246,17 +246,12 @@ let rec type_var_decl_list env method_env vd_list =
     match vd with
     | (t, id, Some e) ->
         check_type_ref_in_env t id env;
-        let typed_e = type_expression env method_env e
-        in let t1 = type_of_typed_expr typed_e
-        in if (t = t1) then begin
-          check_method_local_variable_redefined method_env id;
-          Env.add method_env id t1;
-          (t1, id, Some (typed_e))
-          end
-        else begin
-          print_endline "type not match in var_decl";
-          raise(SyntaxError)
-          end
+        let typed_e = type_expression env method_env e in
+        let t1 = type_of_typed_expr typed_e in
+        check_assignment_type env t t1;
+        check_method_local_variable_redefined method_env id;
+        Env.add method_env id t;
+        (t, id, Some (typed_e))
     | (t, id, None) -> begin
       check_type_ref_in_env t id env;
       check_method_local_variable_redefined method_env id;
