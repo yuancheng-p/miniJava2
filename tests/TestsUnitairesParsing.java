@@ -47,8 +47,12 @@ abstract class B extends C {
 	    toto;
 	}
     }
-
-    Int matt4() { this.ab; }
+    int ab=1;
+    A class_a;
+    Int matt4() {
+        this.ab;
+        class_a.a1=2;
+    }
 }
 static private class C extends A {}
 

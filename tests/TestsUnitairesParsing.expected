@@ -10,6 +10,8 @@ public class A extends Object {
 }
 
 abstract class B extends C {
+  int ab = 1;
+  A class_a;
   B() {
     super();
   }
@@ -56,6 +58,7 @@ abstract class B extends C {
   }
   Int matt4()  {
     this.ab;
+    class_a.a1=2;
   }
 }
 
@@ -73,6 +76,8 @@ A : class_env(parent=: Object)
 B : class_env(parent=: C)
 method : matt4
 method : mthis
+ attr:  A class_a;
+ attr:  int ab = 1;
 Boolean : class_env(parent=: Object)
 C : class_env(parent=: A)
 I : class_env(parent=: Object)

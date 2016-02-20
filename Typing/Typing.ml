@@ -95,6 +95,7 @@ let type_of_typed_expr t_e =
   | TNew(n, qname, params, t) -> t (*Ref({tpath=[];tid=List.hd (List.rev qname)})*) 
   | TAssignExp(e1,assign_op,e2,t) -> t
   | TName(id, t) -> t
+  | TAttr(e, s, t) -> t
   | _ -> raise(NotImplemented("type_of_typed_expr"))
 
 
@@ -115,8 +116,9 @@ let rec type_expression_desc env method_env edesc =
   | Val v -> type_value v
   | Op(e1, op, e2) -> type_op env method_env e1 e2 op
   | New(n,t,params) -> type_new env method_env n t params
-  | Name id -> TName(id,(type_of_name env method_env id))
+  | Name id -> TName(id,(type_of_name env method_env g_class_ref.contents id))
   | AssignExp(e1,assign_op,e2) -> type_assign_exp env method_env e1 assign_op e2
+  | Attr(e, s) -> type_e_attr env method_env e s
   | _ -> TVoidClass (* a small cheat to avoid Match_failure *)
 
 
@@ -199,8 +201,11 @@ and type_new env method_env n t params=
  * we must provide a method_env where we put variables.
  * 2. When it's used for finding names during attributes declaration,
  * we must keep the method_env empty.
+ * 3. class_ref indicate to find in which class
+ * 4. 'this' support
  * *)
-and type_of_name env method_env id =
+and type_of_name env method_env class_ref id =
+  if id = "this" then Ref(class_ref) else
   if Env.mem method_env id then
     begin
       let t = Env.find method_env id
@@ -209,13 +214,14 @@ and type_of_name env method_env id =
   else
     begin
     (* find field in class_env->attributes->aname *)
-    let class_env = Env.find env g_class_ref.contents in
+    let class_env = Env.find env class_ref in
     let rec has_field attrs id =
       match attrs with
       | [] -> raise (Variable_Not_Defined(id))
       | h::others -> if h.aname=id then h.atype else has_field others id
     in has_field class_env.attributes id
     end
+
 
 
 and type_assign_exp env method_env e1 assign_op e2 =
@@ -225,6 +231,18 @@ and type_assign_exp env method_env e1 assign_op e2 =
   and t2 = type_of_typed_expr typed_e2 in
   let t = check_assignment_type env t1 t2
   in TAssignExp(typed_e1, assign_op, typed_e2, t)
+
+
+and type_e_attr env method_env e s =
+  let typed_e1 = type_expression env method_env e in
+  let t1 = type_of_typed_expr typed_e1 in
+  match t1 with
+  (* find a attribute in previous class *)
+  | Ref(r) -> let ta = type_of_name env (Env.initial()) r s in TAttr(typed_e1, s, ta)
+  | Primitive(p) -> TAttr(typed_e1, s, Primitive(p))
+  | _ -> raise(NotImplemented("type_e_attr"))
+  (* TODO check attrbute modifier private? *)
+
 
 
 (* check if a ref type exists in global_env*)
