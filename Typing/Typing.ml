@@ -337,7 +337,7 @@ let rec type_method_list env l =
       t_mreturntype = m.mreturntype;
       t_margstype = type_method_args_list env method_env m.margstype;
       t_mbody = type_statement_list env method_env (List.rev m.mbody); (* FIXME *)
-      (* TODO: t_mthrows *)
+      t_mthrows = m.mthrows;
     }
 
   in match l with

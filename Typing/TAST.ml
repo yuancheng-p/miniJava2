@@ -68,7 +68,7 @@ type t_astmethod = {
     t_mreturntype : Type.t; (* TODO: what should we do? *)
     t_margstype : t_argument list;
     t_mbody : t_statement list;
-(* TODO  t_mthrows : Type.ref_type list; *)
+    t_mthrows : Type.ref_type list;
 }
 
 type t_astconst = {
