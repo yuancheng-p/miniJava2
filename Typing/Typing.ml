@@ -337,12 +337,40 @@ let rec type_method_list env l =
       t_mreturntype = m.mreturntype;
       t_margstype = type_method_args_list env method_env m.margstype;
       t_mbody = type_statement_list env method_env (List.rev m.mbody); (* FIXME *)
-      (* TODO: t_mthrows *)
+      t_mthrows = m.mthrows;
     }
 
   in match l with
      | [] -> []
      | t::q -> (typed_method t)::(type_method_list env q)
+
+
+let type_initial_list env init_list =
+  let l = [] in
+  List.iter
+  (fun initial ->
+    l = List.append l
+    [{
+        t_static = initial.static;
+        t_block = type_statement_list env (Env.initial()) initial.block
+    }]; ()
+  ) init_list; l
+
+
+let type_astconsts_list env astconsts_list =
+  let l = [] in
+  List.iter
+  (fun a ->
+    l = List.append l
+    [{
+      t_cmodifiers = a.cmodifiers;
+      t_cname = a.cname;
+      t_cargstype = type_method_args_list env (Env.initial()) a.cargstype;
+      t_cthrows = a.cthrows;
+      t_cbody = type_statement_list env (Env.initial()) a.cbody;
+    }]; ()
+  ) astconsts_list; l
+
 
 
 let typing ast verbose =
@@ -359,6 +387,9 @@ let typing ast verbose =
             TClass({
               t_cmethods = type_method_list env (List.rev c.cmethods); (* FIXME *)
               t_cattributes = type_attribute_list env c.cattributes;
+              t_cparent = c.cparent;
+              t_cinits = type_initial_list env c.cinits;
+              t_cconsts = type_astconsts_list env c.cconsts;
             })
       in {
         t_modifiers = asttype.modifiers;
