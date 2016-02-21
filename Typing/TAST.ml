@@ -85,9 +85,9 @@ and t_astclass = {
     t_cattributes : t_astattribute list;
     t_cparent : Type.ref_type;
     t_cinits : t_initial list;
-(* TODO
     t_cconsts : t_astconst list;
-    t_ctypes : t_asttype list;
+(* TODO
+    t_ctypes : t_asttype list; (* inner class *)
     t_cloc : Location.t; *)
   }
 
