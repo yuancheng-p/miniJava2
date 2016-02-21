@@ -345,6 +345,18 @@ let rec type_method_list env l =
      | t::q -> (typed_method t)::(type_method_list env q)
 
 
+let type_initial_list env init_list =
+  let l = [] in
+  List.iter
+  (fun initial ->
+    l = List.append l
+    [{
+        t_static = initial.static;
+        t_block = type_statement_list env (Env.initial()) initial.block
+    }]; ()
+  ) init_list; l
+
+
 let typing ast verbose =
   let env = GlobalEnv.build_global_env ast verbose
 
@@ -359,6 +371,8 @@ let typing ast verbose =
             TClass({
               t_cmethods = type_method_list env (List.rev c.cmethods); (* FIXME *)
               t_cattributes = type_attribute_list env c.cattributes;
+              t_cparent = c.cparent;
+              t_cinits = type_initial_list env c.cinits;
             })
       in {
         t_modifiers = asttype.modifiers;

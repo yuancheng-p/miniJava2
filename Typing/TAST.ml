@@ -80,21 +80,22 @@ type t_astconst = {
     (*      t_mloc : Location.t;*)
   }
 
-type t_astclass = {
+and t_astclass = {
     t_cmethods : t_astmethod list;
     t_cattributes : t_astattribute list;
-(* TODO  t_cparent : Type.ref_type;
+    t_cparent : Type.ref_type;
     t_cinits : t_initial list;
+(* TODO
     t_cconsts : t_astconst list;
     t_ctypes : t_asttype list;
     t_cloc : Location.t; *)
   }
 
-type t_type_info =
+and t_type_info =
   | TClass of t_astclass
   | TInter
 
-type t_initial = {
+and t_initial = {
     t_static : bool ;
     t_block : t_statement list
   }
