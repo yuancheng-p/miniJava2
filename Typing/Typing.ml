@@ -253,7 +253,7 @@ and type_e_call env method_env eo s el =
   (* use for find method by signiture in global_env *)
   let rec construct_arg_list_by_expr el result_list =
     match el with
-    | [] -> result_list
+    | [] -> List.rev result_list
     | h::q -> begin
       let typed_arg = type_expression env method_env h in
       let targ = type_of_typed_expr typed_arg in
@@ -262,7 +262,7 @@ and type_e_call env method_env eo s el =
    in
   let rec typed_arg_list el result_list =
     match el with
-    | [] -> result_list
+    | [] -> List.rev result_list
     | h::q -> begin
       let typed_arg = type_expression env method_env h in
       typed_arg_list q (List.append result_list [typed_arg])
