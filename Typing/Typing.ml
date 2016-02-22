@@ -16,6 +16,7 @@ exception Method_Local_Variable_Redefined of string
 exception UnknownType of string
 exception Variable_Not_Defined of string
 exception Type_Mismatch of string
+exception Method_Not_exist of string
 
 
 (* to know if ref_type1 is parent of ref_type2 *)
@@ -96,6 +97,7 @@ let type_of_typed_expr t_e =
   | TAssignExp(e1,assign_op,e2,t) -> t
   | TName(id, t) -> t
   | TAttr(e, s, t) -> t
+  | TCall(eo, s, el, t) -> t
   | _ -> raise(NotImplemented("type_of_typed_expr"))
 
 
@@ -119,6 +121,7 @@ let rec type_expression_desc env method_env edesc =
   | Name id -> TName(id,(type_of_name env method_env g_class_ref.contents id))
   | AssignExp(e1,assign_op,e2) -> type_assign_exp env method_env e1 assign_op e2
   | Attr(e, s) -> type_e_attr env method_env e s
+  | Call(eo, s, el) -> type_e_call env method_env eo s el
   | _ -> TVoidClass (* a small cheat to avoid Match_failure *)
 
 
@@ -243,6 +246,54 @@ and type_e_attr env method_env e s =
   | _ -> raise(NotImplemented("type_e_attr"))
   (* TODO check attrbute modifier private? *)
 
+(* find and check method call from this class or other class *)
+(* TODO need to support parent method *)
+and type_e_call env method_env eo s el =
+  (* construct a argument list from expression list -> same as EnvType.t_arg -> *)
+  (* use for find method by signiture in global_env *)
+  let rec construct_arg_list_by_expr el result_list =
+    match el with
+    | [] -> result_list
+    | h::q -> begin
+      let typed_arg = type_expression env method_env h in
+      let targ = type_of_typed_expr typed_arg in
+      construct_arg_list_by_expr q (List.append result_list [{tvararg = false;tptype = targ}])
+      end
+   in
+  let rec typed_arg_list el result_list =
+    match el with
+    | [] -> result_list
+    | h::q -> begin
+      let typed_arg = type_expression env method_env h in
+      typed_arg_list q (List.append result_list [typed_arg])
+      end
+   in
+  (* make method signiture -> used to find method in class_env *)
+  let method_signiture = {name = s; args = (construct_arg_list_by_expr el [])} in
+  match eo with
+  (* call method from other reference class *)
+  | Some e ->
+    begin
+      let typed_e1 = type_expression env method_env e in
+      let t1 = type_of_typed_expr typed_e1 in
+      match t1 with
+      | Ref(r) ->
+        begin
+          let class_env = Env.find env r in
+          if Env.mem class_env.methods method_signiture then
+            let the_method = Env.find class_env.methods method_signiture in
+            TCall(Some(typed_e1), s, typed_arg_list el [], the_method.return_type)
+            else raise(Method_Not_exist(s))
+        end
+      | _ -> raise(NotImplemented("type_e_call"))
+    end
+   (* method call in same class, find method by name *)
+  | None ->
+    let class_env = Env.find env g_class_ref.contents in
+    if Env.mem class_env.methods method_signiture then
+      let the_method = Env.find class_env.methods method_signiture in
+      TCall(None, s, typed_arg_list el [], the_method.return_type)
+      else raise(Method_Not_exist(s))
 
 
 (* check if a ref type exists in global_env*)

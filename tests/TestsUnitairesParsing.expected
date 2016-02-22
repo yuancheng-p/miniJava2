@@ -24,21 +24,13 @@ abstract class B extends C {
         ;
       }
       new A();
-      A.m();
-      a[2].m();
-      a[2][6].m();
-      B.A.m();
       this.m();
-      super();
-      this();
-      super.m();
       m();
       for (int c; c>6;c++) {
         {
         }
       }
     }
-    a(B.this);
     a=b=1;
     return new A();
     try {
@@ -60,6 +52,8 @@ abstract class B extends C {
     this.ab;
     class_a.a1=2;
   }
+  void m()  {
+  }
 }
 
 static private class C extends A {
@@ -68,6 +62,7 @@ static private class C extends A {
 start typing
 check add and methods:B:mthis
 check add and methods:B:matt4
+check add and methods:B:m
 --------- env --------
 A : class_env(parent=: Object)
  attr:  String a6 = "jsdjkndjk\njdsdjkf";
@@ -75,6 +70,7 @@ A : class_env(parent=: Object)
  attr:  int a1 = 1;
 B : class_env(parent=: C)
 method : matt4
+method : m
 method : mthis
  attr:  A class_a;
  attr:  int ab = 1;
