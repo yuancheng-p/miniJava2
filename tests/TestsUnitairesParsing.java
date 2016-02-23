@@ -9,7 +9,7 @@ public class A {
     String a6 = "jsdjkndjk\njdsdjkf";
 }
 abstract class B extends C {
-    B() { super(); }
+    B() { /* super(); */ }
     private A mthis () throws tuty.A, tre.tr.b {
 	int a, b;
 	{

@@ -13,7 +13,6 @@ abstract class B extends C {
   int ab = 1;
   A class_a;
   B() {
-    super();
   }
   A mthis() tuty.A,tre.tr.b {
     int a;
