@@ -19,8 +19,8 @@ type t_expression_desc =
   | TAssignExp of t_expression * AST.assign_op * t_expression * Type.t
   | TNew of string option * string list * t_expression list * Type.t
   | TNewArray of Type.t * (t_expression option) list * t_expression option
-  | TCall of t_expression option * string * t_expression list
-  | TAttr of t_expression * string
+  | TCall of t_expression option * string * t_expression list * Type.t
+  | TAttr of t_expression * string * Type.t
   | TIf of t_expression * t_expression * t_expression
   | TArrayInit of t_expression list
   | TArray of t_expression * (t_expression option) list

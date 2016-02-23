@@ -9,27 +9,27 @@ public class A {
     String a6 = "jsdjkndjk\njdsdjkf";
 }
 abstract class B extends C {
-    B() { super(); }
+    B() { /* super(); */ }
     private A mthis () throws tuty.A, tre.tr.b {
 	int a, b;
 	{
 	    int c = 18;
 	    { ; }
 	    new A();
-	    A.m();
-	    a[2].m();
-	    a[2][6].m();
-	    B.A.m();
+	    //A.m();
+	    //a[2].m();
+	    //a[2][6].m();
+	    //B.A.m();
 	    this.m();
-	    super();
-	    this();
-	    super.m();
+	    //super();
+	    //this();
+	    //super.m();
 	    m();
 	    for (int c; c > 6 ; c++) { }
 	}
 	//tutu.tyty.a = 1;
 	//final tutu.tyty.a op;
-	a(B.this);
+	//a(B.this);
 	a = b = 1;
 	return new A();
 	try {
@@ -47,8 +47,13 @@ abstract class B extends C {
 	    toto;
 	}
     }
-
-    Int matt4() { this.ab; }
+    int ab=1;
+    A class_a;
+    Int matt4() {
+        this.ab;
+        class_a.a1=2;
+    }
+    void m(){}
 }
 static private class C extends A {}
 
