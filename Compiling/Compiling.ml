@@ -48,8 +48,7 @@ let build_class_descriptors t_ast class_descriptors =
          begin
            let cls_ref = { tpath = []; tid = t.t_id }
            in let descriptor = {
-             c_parent = Type.object_type; (* TODO replace by real parent*)
-             (* c_parent = t_astcls.t_cparent *)
+             c_parent = t_astcls.t_cparent;
              c_methods = create_methods_table t_astcls.t_cmethods;
              c_attributes = create_attr_table t_astcls.t_cattributes;
            }
@@ -60,9 +59,31 @@ let build_class_descriptors t_ast class_descriptors =
   type_list
 
 
+(* TODO: how to load the predefined methods of a Object, Integer, String etc.? *)
+let build_basic_class_descriptors class_descriptors =
+  let basic_descs = [
+    Type.object_type, {
+      c_parent = {tpath=[]; tid=""};
+      c_methods = create_methods_table [];
+      c_attributes = create_attr_table [];
+    };
+    Type.integer_type, {
+      c_parent = Type.object_type;
+      c_methods = create_methods_table [];
+      c_attributes = create_attr_table [];
+    };
+  ] in
+  List.iter
+  (
+    fun (cls_ref, descriptor) ->
+    Hashtbl.add class_descriptors cls_ref descriptor; ()
+  ) basic_descs
+
+
 let compile t_ast =
 
   (* ref_type: class_descriptor *)
-  let class_descriptors = Hashtbl.create 10
-  in build_class_descriptors t_ast class_descriptors;
+  let class_descriptors = Hashtbl.create 10 in
+  build_basic_class_descriptors class_descriptors;
+  build_class_descriptors t_ast class_descriptors;
   class_descriptors

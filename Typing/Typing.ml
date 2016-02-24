@@ -141,8 +141,6 @@ and type_op env method_env e1 e2 op =
          -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
          | _, Float
          -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
-         | Float, Float
-         -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
          | _, _
          -> raise(NotImplemented("TOp"))
        end
@@ -405,7 +403,7 @@ let rec type_method_list env l =
       t_mname = m.mname;
       t_mreturntype = m.mreturntype;
       t_margstype = type_method_args_list env method_env m.margstype;
-      t_mbody = type_statement_list env method_env (List.rev m.mbody); (* FIXME *)
+      t_mbody = List.rev(type_statement_list env method_env (List.rev m.mbody));
       t_mthrows = m.mthrows;
     }
 
