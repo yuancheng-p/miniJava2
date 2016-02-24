@@ -3,6 +3,22 @@ open TAST
 
 
 exception No_Entry_Point
+exception NotImplemented of string
+
+
+let string_of_value v =
+  match v with
+  | TInt(i) -> string_of_int i ^ " (int)"
+  | _ -> raise(NotImplemented("string_of_value"))
+
+
+let print_current_frame frame =
+  print_endline "------ current frame ------";
+  Hashtbl.iter
+  (
+    fun id v -> print_endline (id ^ " : " ^string_of_value v);
+  ) frame
+
 
 
 let rec eval_stmt stmt heap frame cls_descs =
@@ -10,9 +26,23 @@ let rec eval_stmt stmt heap frame cls_descs =
   let rec eval_expression e =
     match e.t_edesc with
     | TVal (v, t) -> v
+    | TOp (e1, op, e2, t) ->
+      begin
+        let v1 = eval_expression e1
+        and v2 = eval_expression e2 in
+        match op with
+        | Op_add ->
+            match v1, v2 with
+            | TInt(i1), TInt(i2) ->
+              let i = i1 + i2 in
+              print_endline ("i1 + i2 = " ^ (string_of_int i));
+              TInt(i)
+        | _ -> raise(NotImplemented("TOp"))
+      end
     (* | TNew
      * | TCall
      * *)
+    | _ -> raise(NotImplemented("eval_expression"))
 
   (* for understanding local variable initialization,
    * see: http://stackoverflow.com/questions/2187632/why-does-javac-complain-about-not-initialized-variable
@@ -34,6 +64,7 @@ let rec eval_stmt stmt heap frame cls_descs =
             (* put the value directely into the current frame *)
             let v = eval_expression e;
             in Hashtbl.add frame id v;
+            print_current_frame frame;
             ()
         | Array (at, i) -> ();
         | _ -> ();

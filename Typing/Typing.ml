@@ -141,8 +141,6 @@ and type_op env method_env e1 e2 op =
          -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
          | _, Float
          -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
-         | Float, Float
-         -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
          | _, _
          -> raise(NotImplemented("TOp"))
        end
