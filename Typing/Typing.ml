@@ -403,7 +403,7 @@ let rec type_method_list env l =
       t_mname = m.mname;
       t_mreturntype = m.mreturntype;
       t_margstype = type_method_args_list env method_env m.margstype;
-      t_mbody = type_statement_list env method_env (List.rev m.mbody); (* FIXME *)
+      t_mbody = List.rev(type_statement_list env method_env (List.rev m.mbody));
       t_mthrows = m.mthrows;
     }
 

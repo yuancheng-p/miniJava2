@@ -6,9 +6,15 @@ exception No_Entry_Point
 exception NotImplemented of string
 
 
+type evaled_expr =
+  | EValue of t_value
+  | EName of string
+
+
 let string_of_value v =
   match v with
-  | TInt(i) -> string_of_int i ^ " (int)"
+  | EValue(TInt(i)) -> string_of_int i ^ " (int)"
+  | EName (id) -> id
   | _ -> raise(NotImplemented("string_of_value"))
 
 
@@ -20,12 +26,11 @@ let print_current_frame frame =
   ) frame
 
 
-
 let rec eval_stmt stmt heap frame cls_descs =
 
   let rec eval_expression e =
     match e.t_edesc with
-    | TVal (v, t) -> v
+    | TVal (v, t) -> EValue(v)
     | TOp (e1, op, e2, t) ->
       begin
         let v1 = eval_expression e1
@@ -33,15 +38,23 @@ let rec eval_stmt stmt heap frame cls_descs =
         match op with
         | Op_add ->
             match v1, v2 with
-            | TInt(i1), TInt(i2) ->
+            | EValue(TInt(i1)), EValue(TInt(i2)) ->
               let i = i1 + i2 in
-              print_endline ("i1 + i2 = " ^ (string_of_int i));
-              TInt(i)
+              print_endline ((string_of_int i1) ^ "+" ^ (string_of_int i2) ^ "=" ^ (string_of_int i)) ;
+              EValue(TInt(i))
         | _ -> raise(NotImplemented("TOp"))
       end
-    (* | TNew
-     * | TCall
-     * *)
+    | TAssignExp(e1, op, e2, t) ->
+      begin
+        let variable = eval_expression e1
+        and v = eval_expression e2 in
+        match op with
+        | Assign ->
+            print_endline ("+++Assign:" ^ (string_of_value v));
+            Hashtbl.replace frame (string_of_value variable) v;
+            v
+      end
+    | TName (id, t) -> EName(id)
     | _ -> raise(NotImplemented("eval_expression"))
 
   (* for understanding local variable initialization,
@@ -54,6 +67,7 @@ let rec eval_stmt stmt heap frame cls_descs =
      * this is safe because it's already checked during typing.
      * *)
     | (t, id, Some e) ->
+        begin
         match t with
         | Ref (rt) ->
             (* TODO create instance *)
@@ -62,12 +76,14 @@ let rec eval_stmt stmt heap frame cls_descs =
             in Hashtbl.add heap id instance; ()
         | Primitive (pt) ->
             (* put the value directely into the current frame *)
-            let v = eval_expression e;
-            in Hashtbl.add frame id v;
-            print_current_frame frame;
+            let v = eval_expression e in
+            Hashtbl.add frame id v;
             ()
         | Array (at, i) -> ();
         | _ -> ();
+        end
+    | (t, id, None) ->
+        raise(NotImplemented("eval_var_decl, no expression"));
 
   in match stmt with
   | TVarDecl vd_list ->
@@ -79,7 +95,9 @@ let rec eval_stmt stmt heap frame cls_descs =
 let eval_entry_point ep heap frame class_descriptors =
   List.iter
   (
-    fun stmt -> eval_stmt stmt heap frame class_descriptors; ()
+    fun stmt ->
+      eval_stmt stmt heap frame class_descriptors;
+      print_current_frame frame; ()
   ) ep.t_mbody
 
 
