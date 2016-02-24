@@ -339,6 +339,8 @@ let rec type_statement_list env method_env l =
     | Block b -> TBlock(List.map type_statment b)
     | If(e,s,None) -> TIf(type_expression env method_env e, type_statment s, None)
     | If(e,s1,Some s2) -> TIf(type_expression env method_env e, type_statment s1, Some (type_statment s2))
+    | Return(None) -> TReturn(None)
+    | Return(Some e) -> TReturn(Some (type_expression env method_env e))
     | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
 
@@ -392,18 +394,33 @@ let rec type_attribute_list env l =
      | [] -> []
      | t::q -> (type_attr t)::(type_attribute_list env q)
 
+let ref_type_of_type t =
+    match t with
+    | Ref(ref_type) -> ref_type
+
+let judge_ref_type t =
+    match t with
+    | Ref(ref_type) -> true
+    | _ -> false
+
 let rec type_method_list env l =
   let typed_method m =
     (* method_env with key: variable_name, value: variable_type (which is not important)
      * it is used for local variable redifinition check.
      * *)
     let method_env = Env.initial();
+    in let t_mbody = type_statement_list env method_env (List.rev m.mbody);
+    in let t_mreturntype =
+      match List.nth t_mbody 0 with
+      | TReturn(None) -> if m.mreturntype = Void then m.mreturntype else (raise_type_mismatch m.mreturntype Void);
+      | TReturn(Some t_e) -> let t_t_e = type_of_typed_expr t_e in if m.mreturntype=t_t_e then m.mreturntype else if judge_ref_type m.mreturntype & judge_ref_type t_t_e & is_parent_of env (ref_type_of_type m.mreturntype) (ref_type_of_type t_t_e) then t_t_e else(raise_type_mismatch m.mreturntype t_t_e);
+      (* mismatch here *)
     in {
       t_mmodifiers = m.mmodifiers;
       t_mname = m.mname;
-      t_mreturntype = m.mreturntype;
+      t_mreturntype;
       t_margstype = type_method_args_list env method_env m.margstype;
-      t_mbody = List.rev(type_statement_list env method_env (List.rev m.mbody));
+      t_mbody = List.rev(t_mbody);
       t_mthrows = m.mthrows;
     }
 

@@ -1,0 +1,24 @@
+successfull parsing
+start typing
+check add and methods:B:fooA
+check add and methods:B:fooA1
+check add and methods:B:fooA2
+check add and methods:B:fooB
+check add and methods:B:fooB1
+--------- env --------
+A : class_env(parent=: I)
+ attr:  String a6 = "jsdjkndjk\njdsdjkf";
+ attr:  int a1 = 1;
+B : class_env(parent=: Object)
+method : fooB
+method : fooA
+method : fooB1
+method : fooA2
+method : fooA1
+ attr:  boolean a2 = false;
+ attr:  int a5 = 1;
+Boolean : class_env(parent=: Object)
+I : class_env(parent=: Object)
+Integer : class_env(parent=: Object)
+Object : class_env(parent=: )
+String : class_env(parent=: Object)
