@@ -1,20 +1,28 @@
 open Type
 open TAST
+open Compiling
 
 
 exception No_Entry_Point
 exception NotImplemented of string
 
 
+let heap_size = ref 0
+
 type evaled_expr =
   | EValue of t_value
   | EName of string
+  | ERef of int
+  | EVoid
+  | ENull
 
 
 let string_of_value v =
   match v with
   | EValue(TInt(i)) -> string_of_int i ^ " (int)"
   | EName (id) -> id
+  | ERef (r) -> string_of_int r ^ " (ref)"
+  | ENull -> "null"
   | _ -> raise(NotImplemented("string_of_value"))
 
 
@@ -24,6 +32,23 @@ let print_current_frame frame =
   (
     fun id v -> print_endline (id ^ " : " ^string_of_value v);
   ) frame
+
+
+let print_obj_tbl obj_tbl =
+  Hashtbl.iter
+  (
+    fun id v -> print_endline ("  " ^ id ^ " : " ^ string_of_value v);
+  ) obj_tbl
+
+
+let print_heap heap =
+  print_endline "=== heap ===";
+  Hashtbl.iter
+  (
+    fun ref_id obj_tbl ->
+      print_endline ("[" ^ (string_of_int ref_id) ^ "] :");
+      print_obj_tbl obj_tbl
+  ) heap
 
 
 let rec eval_stmt stmt heap frame cls_descs =
@@ -52,9 +77,41 @@ let rec eval_stmt stmt heap frame cls_descs =
         | Assign ->
             print_endline ("+++Assign:" ^ (string_of_value v));
             Hashtbl.replace frame (string_of_value variable) v;
-            v
+            EVoid
       end
     | TName (id, t) -> EName(id)
+    | TNew (None, qname, el, Ref(rt)) ->
+        let cls_d = Hashtbl.find cls_descs rt in
+        let attrs = cls_d.c_attributes in
+        let obj_tbl = Hashtbl.create (Hashtbl.length attrs) in
+        (* object initialization *)
+        Hashtbl.iter
+        (
+          fun k v ->
+            match v.t_adefault with
+            | Some e ->
+              Hashtbl.add obj_tbl k (eval_expression e)
+            | None ->
+              (* assign a default value to the attribute *)
+              begin
+                match v.t_atype with
+                | Primitive(p) ->
+                  begin
+                    match p with
+                    | Int ->
+                      Hashtbl.add obj_tbl k (EValue(TInt(0)))
+                    (*TODO Double, Boolean, etc. *)
+                  end
+                | Ref(r) ->
+                    (* reference type attributes are initialized with null value *)
+                    Hashtbl.add obj_tbl k ENull
+              end
+        ) attrs;
+
+        let ref_id = !heap_size in
+        Hashtbl.add heap ref_id obj_tbl;
+        heap_size := !heap_size + 1;
+        ERef(ref_id)
     | _ -> raise(NotImplemented("eval_expression"))
 
   (* for understanding local variable initialization,
@@ -72,8 +129,8 @@ let rec eval_stmt stmt heap frame cls_descs =
         | Ref (rt) ->
             (* TODO create instance *)
             let cls_d = Hashtbl.find cls_descs rt;
-            in let instance = eval_expression e;
-            in Hashtbl.add heap id instance; ()
+            in let ref = eval_expression e;
+            in Hashtbl.add frame id ref; ()
         | Primitive (pt) ->
             (* put the value directely into the current frame *)
             let v = eval_expression e in
@@ -97,17 +154,14 @@ let eval_entry_point ep heap frame class_descriptors =
   (
     fun stmt ->
       eval_stmt stmt heap frame class_descriptors;
-      print_current_frame frame; ()
+      print_current_frame frame;
+      print_heap heap; ()
   ) ep.t_mbody
 
 
 (* find the main method *)
-let rec find_entry_point type_list =
-  let ep = ref {
-    t_mmodifiers = []; t_mname = ""; t_mreturntype = Void;
-    t_margstype = []; t_mbody = []; t_mthrows = [];
-  }
-  in let find_ep_from_cls asttype =
+let rec find_entry_point type_list ep =
+  let find_ep_from_cls asttype =
     match asttype.t_info with
     | TClass c ->
         List.iter
@@ -117,14 +171,14 @@ let rec find_entry_point type_list =
         ) c.t_cmethods
 
   in match type_list with
-  | [] -> !ep
+  | [] -> ()
   | h::others ->
-      find_ep_from_cls h; find_entry_point others; !ep
+      find_ep_from_cls h; find_entry_point others ep; ()
 
 
 (* ep is a t_astmethod *)
 let print_entry_point ep =
-  if ep.t_mname = "" then
+  if ep.t_mname <> "main" then
     raise(No_Entry_Point);
 
   print_endline ep.t_mname
@@ -137,9 +191,13 @@ let eval t_ast class_descriptors =
   (* TODO: initilization of static instances *)
 
   (* TODO: find entry point *)
-  let ep = find_entry_point t_ast.t_type_list;
-  in print_entry_point ep;
+  let ep = ref {
+    t_mmodifiers = []; t_mname = ""; t_mreturntype = Void;
+    t_margstype = []; t_mbody = []; t_mthrows = [];
+  } in
+  find_entry_point t_ast.t_type_list ep;
+  print_entry_point !ep;
 
   let frame = Hashtbl.create 1;
-  in eval_entry_point ep heap frame class_descriptors;
+  in eval_entry_point !ep heap frame class_descriptors;
   ();
