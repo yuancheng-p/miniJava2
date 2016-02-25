@@ -130,6 +130,12 @@ let rec eval_stmt stmt heap frame cls_descs =
             (* TODO create instance *)
             let cls_d = Hashtbl.find cls_descs rt;
             in let ref = eval_expression e;
+            in let ref =
+            match ref with
+            | EName(n) ->
+                Hashtbl.find frame n;
+            | _ ->
+                ref;
             in Hashtbl.add frame id ref; ()
         | Primitive (pt) ->
             (* put the value directely into the current frame *)
