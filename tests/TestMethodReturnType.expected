@@ -3,6 +3,9 @@ start typing
 check add and methods:B:fooA
 check add and methods:B:fooA1
 check add and methods:B:fooA2
+check add and methods:B:foo
+check add and methods:B:fo
+check add and methods:B:fo1
 check add and methods:B:fooB
 check add and methods:B:fooB1
 --------- env --------
@@ -12,9 +15,12 @@ A : class_env(parent=: I)
 B : class_env(parent=: Object)
 method : fooB
 method : fooA
+method : foo
 method : fooB1
+method : fo1
 method : fooA2
 method : fooA1
+method : fo
  attr:  boolean a2 = false;
  attr:  int a5 = 1;
 Boolean : class_env(parent=: Object)

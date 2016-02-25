@@ -331,7 +331,9 @@ let rec type_var_decl_list env method_env vd_list =
   | h::others -> type_var_decl env method_env h::(type_var_decl_list env method_env others)
 
 
-let rec type_statement_list env method_env l =
+(* is_call determines if the statment list is a method,
+ * if true, then the mreturntype is taken into account *)
+let rec type_statement_list env method_env l is_call mreturntype =
   let rec type_statment stmt =
     match stmt with
     | VarDecl vd_list -> TVarDecl(type_var_decl_list env method_env vd_list)
@@ -339,14 +341,27 @@ let rec type_statement_list env method_env l =
     | Block b -> TBlock(List.map type_statment b)
     | If(e,s,None) -> TIf(type_expression env method_env e, type_statment s, None)
     | If(e,s1,Some s2) -> TIf(type_expression env method_env e, type_statment s1, Some (type_statment s2))
-    | Return(None) -> TReturn(None)
-    | Return(Some e) -> TReturn(Some (type_expression env method_env e))
+    | Return(Some e) -> type_return_stmt e
+    | Return(None) -> type_none_return_stmt;
     | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
 
+  and type_return_stmt e =
+    if not is_call then
+      raise (Action_Not_Supported("return statement outside a method call"));
+    let typed_e = type_expression env method_env e in
+    let type_of_e = type_of_typed_expr typed_e in
+    check_assignment_type env mreturntype type_of_e;
+    TReturn(Some (typed_e))
+
+  and type_none_return_stmt =
+    if not is_call then
+      raise (Action_Not_Supported("return statement outside a method call"));
+    TReturn(None)
+
   in match l with
     | [] -> []
-    | h::others -> (type_statment h)::(type_statement_list env method_env others)
+    | h::others -> (type_statment h)::(type_statement_list env method_env others is_call mreturntype)
 
 let rec type_method_args_list env method_env l =
   let check_method_local_variable_redefined method_env id =
@@ -394,33 +409,19 @@ let rec type_attribute_list env l =
      | [] -> []
      | t::q -> (type_attr t)::(type_attribute_list env q)
 
-let ref_type_of_type t =
-    match t with
-    | Ref(ref_type) -> ref_type
-
-let judge_ref_type t =
-    match t with
-    | Ref(ref_type) -> true
-    | _ -> false
 
 let rec type_method_list env l =
   let typed_method m =
-    (* method_env with key: variable_name, value: variable_type (which is not important)
+    (* method_env with key: variable_name, value: variable_type
      * it is used for local variable redifinition check.
      * *)
-    let method_env = Env.initial();
-    in let t_mbody = type_statement_list env method_env (List.rev m.mbody);
-    in let t_mreturntype =
-      match List.nth t_mbody 0 with
-      | TReturn(None) -> if m.mreturntype = Void then m.mreturntype else (raise_type_mismatch m.mreturntype Void);
-      | TReturn(Some t_e) -> let t_t_e = type_of_typed_expr t_e in if m.mreturntype=t_t_e then m.mreturntype else if judge_ref_type m.mreturntype & judge_ref_type t_t_e & is_parent_of env (ref_type_of_type m.mreturntype) (ref_type_of_type t_t_e) then t_t_e else(raise_type_mismatch m.mreturntype t_t_e);
-      (* mismatch here *)
-    in {
+    let method_env = Env.initial() in
+    {
       t_mmodifiers = m.mmodifiers;
       t_mname = m.mname;
-      t_mreturntype;
+      t_mreturntype = m.mreturntype;
       t_margstype = type_method_args_list env method_env m.margstype;
-      t_mbody = List.rev(t_mbody);
+      t_mbody = List.rev(type_statement_list env method_env (List.rev m.mbody) true m.mreturntype);
       t_mthrows = m.mthrows;
     }
 
@@ -436,11 +437,12 @@ let type_initial_list env init_list =
     l = List.append l
     [{
         t_static = initial.static;
-        t_block = type_statement_list env (Env.initial()) initial.block
+        t_block = type_statement_list env (Env.initial()) initial.block false Void
     }]; ()
   ) init_list; l
 
 
+(* constructors *)
 let type_astconsts_list env astconsts_list =
   let l = [] in
   List.iter
@@ -451,7 +453,7 @@ let type_astconsts_list env astconsts_list =
       t_cname = a.cname;
       t_cargstype = type_method_args_list env (Env.initial()) a.cargstype;
       t_cthrows = a.cthrows;
-      t_cbody = type_statement_list env (Env.initial()) a.cbody;
+      t_cbody = type_statement_list env (Env.initial()) a.cbody true Void;
     }]; ()
   ) astconsts_list; l
 

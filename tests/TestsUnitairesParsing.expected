@@ -79,3 +79,4 @@ I : class_env(parent=: Object)
 Integer : class_env(parent=: Object)
 Object : class_env(parent=: )
 String : class_env(parent=: Object)
+end typing
