@@ -20,6 +20,14 @@ type evaled_expr =
 let string_of_value v =
   match v with
   | EValue(TInt(i)) -> string_of_int i ^ " (int)"
+  | EValue(TFloat(f)) -> string_of_float f ^ " (float)"
+  | EValue(TChar(c)) ->
+     begin
+     match c with
+       | None -> "None (char)"
+       | Some v -> Char.escaped v ^ " (char)"
+     end
+  | EValue(TBoolean(b)) -> string_of_bool b ^ " (boolean)"
   | EName (id) -> id
   | ERef (r) -> string_of_int r ^ " (ref)"
   | ENull -> "null"
@@ -98,8 +106,14 @@ let rec eval_stmt stmt heap frame cls_descs =
                 | Primitive(p) ->
                   begin
                     match p with
-                    | Int ->
+                    | Int | Short | Long | Byte ->
                       Hashtbl.add obj_tbl k (EValue(TInt(0)))
+                    | Double | Float ->
+                      Hashtbl.add obj_tbl k (EValue(TFloat(0.0)))
+                    | Char ->
+                      Hashtbl.add obj_tbl k (EValue(TChar(None)))
+                    | Boolean ->
+                      Hashtbl.add obj_tbl k (EValue(TBoolean(false)))
                     (*TODO Double, Boolean, etc. *)
                   end
                 | Ref(r) ->
@@ -130,6 +144,12 @@ let rec eval_stmt stmt heap frame cls_descs =
             (* TODO create instance *)
             let cls_d = Hashtbl.find cls_descs rt;
             in let ref = eval_expression e;
+            in let ref =
+            match ref with
+            | EName(n) ->
+                Hashtbl.find frame n;
+            | _ ->
+                ref;
             in Hashtbl.add frame id ref; ()
         | Primitive (pt) ->
             (* put the value directely into the current frame *)
