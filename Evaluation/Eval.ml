@@ -1,3 +1,4 @@
+open Env
 open Type
 open TAST
 open Compiling
@@ -5,6 +6,7 @@ open Compiling
 
 exception No_Entry_Point
 exception NotImplemented of string
+exception Action_Not_Supported of string
 
 
 let heap_size = ref 0
@@ -36,9 +38,9 @@ let string_of_value v =
 
 let print_current_frame frame =
   print_endline "------ current frame ------";
-  Hashtbl.iter
+  Env.iter
   (
-    fun id v -> print_endline (id ^ " : " ^string_of_value v);
+    fun (id, v) -> print_endline (id ^ " : " ^string_of_value v);
   ) frame
 
 
@@ -84,7 +86,7 @@ let rec eval_stmt stmt heap frame cls_descs =
         match op with
         | Assign ->
             print_endline ("+++Assign:" ^ (string_of_value v));
-            Hashtbl.replace frame (string_of_value variable) v;
+            Env.replace frame (string_of_value variable) v;
             EVoid
       end
     | TName (id, t) -> EName(id)
@@ -114,7 +116,6 @@ let rec eval_stmt stmt heap frame cls_descs =
                       Hashtbl.add obj_tbl k (EValue(TChar(None)))
                     | Boolean ->
                       Hashtbl.add obj_tbl k (EValue(TBoolean(false)))
-                    (*TODO Double, Boolean, etc. *)
                   end
                 | Ref(r) ->
                     (* reference type attributes are initialized with null value *)
@@ -126,7 +127,39 @@ let rec eval_stmt stmt heap frame cls_descs =
         Hashtbl.add heap ref_id obj_tbl;
         heap_size := !heap_size + 1;
         ERef(ref_id)
+    | TCall (Some e, mname, arg_list, t) ->
+        (* 1. copy the frame
+         * 2. find method tast
+         * 3. eval the tast, passing a new frame
+         * *)
+        (* FIXME: not sure ...*)
+        let ref = get_ref e frame in
+        let new_frame = Env.define frame "this" ref in
+        let t = Typing.type_of_typed_expr e in
+
+        let rt =
+          begin
+            match t with
+            | Ref(r) -> r
+            | _ -> raise(Action_Not_Supported("cannot call method of primitive type"))
+          end in
+
+        let cls_d = Hashtbl.find cls_descs rt in
+        let the_method = Hashtbl.find cls_d.c_methods mname in (* TODO *)
+        print_endline ("**Call: " ^ mname);
+        eval_method the_method heap new_frame cls_descs;
+        print_endline ("**Finished Call: " ^ mname);
+        EVoid
+
     | _ -> raise(NotImplemented("eval_expression"))
+
+    and get_ref e frame =
+      let ref = eval_expression e in
+      match ref with
+      | EName(n) ->
+          Env.find frame n
+      | _ -> ref
+
 
   (* for understanding local variable initialization,
    * see: http://stackoverflow.com/questions/2187632/why-does-javac-complain-about-not-initialized-variable
@@ -142,19 +175,13 @@ let rec eval_stmt stmt heap frame cls_descs =
         match t with
         | Ref (rt) ->
             (* TODO create instance *)
-            let cls_d = Hashtbl.find cls_descs rt;
-            in let ref = eval_expression e;
-            in let ref =
-            match ref with
-            | EName(n) ->
-                Hashtbl.find frame n;
-            | _ ->
-                ref;
-            in Hashtbl.add frame id ref; ()
+            let cls_d = Hashtbl.find cls_descs rt in
+            let ref = get_ref e frame in
+            Env.add frame id ref; ()
         | Primitive (pt) ->
             (* put the value directely into the current frame *)
             let v = eval_expression e in
-            Hashtbl.add frame id v;
+            Env.add frame id v;
             ()
         | Array (at, i) -> ();
         | _ -> ();
@@ -166,10 +193,19 @@ let rec eval_stmt stmt heap frame cls_descs =
   | TVarDecl vd_list ->
       List.iter (fun vd -> eval_var_decl vd ) vd_list
   | TExpr e -> eval_expression e; ()
+  | TReturn(None) ->
+    print_endline "TODO: Return statement"; ()
+  | TReturn(Some e) ->
+  (*
+    TODO
+    let v = eval_expression e in
+    match v with 
+    *)
+    print_endline "TODO: Return statement"; ()
   | _ -> ()
 
 
-let eval_entry_point ep heap frame class_descriptors =
+and eval_method ep heap frame class_descriptors =
   List.iter
   (
     fun stmt ->
@@ -218,6 +254,6 @@ let eval t_ast class_descriptors =
   find_entry_point t_ast.t_type_list ep;
   print_entry_point !ep;
 
-  let frame = Hashtbl.create 1;
-  in eval_entry_point !ep heap frame class_descriptors;
+  let frame = Env.initial();
+  in eval_method !ep heap frame class_descriptors;
   ();
