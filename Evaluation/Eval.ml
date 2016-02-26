@@ -19,6 +19,8 @@ type evaled_expr =
   | EVoid
   | ENull
 
+exception Return_Val of evaled_expr
+
 
 let string_of_value v =
   match v with
@@ -34,6 +36,7 @@ let string_of_value v =
   | EName (id) -> id
   | ERef (r) -> string_of_int r ^ " (ref)"
   | ENull -> "null"
+  | EVoid -> "void"
   | _ -> raise(NotImplemented("string_of_value"))
 
 
@@ -62,7 +65,34 @@ let print_heap heap =
   ) heap
 
 
-let rec eval_stmt stmt heap frame cls_descs =
+let rec eval_method ep heap frame class_descriptors =
+  try
+    eval_stmt_list ep.t_mbody heap frame class_descriptors;
+    EVoid (* return void by default *)
+  with
+  | Return_Val (ret) -> ret
+  (* TODO: raise Java Exception *)
+
+
+and eval_stmt_list sl heap frame class_descriptors =
+  match sl with
+  | [] -> ()
+  | h::others -> begin
+      match h with
+      | TReturn(_) -> (* stop the eval *)
+          let ret = eval_stmt h heap frame class_descriptors in
+          print_current_frame frame;
+          print_heap heap;
+          raise (Return_Val(ret))
+      | _ ->
+          eval_stmt h heap frame class_descriptors;
+          print_current_frame frame;
+          print_heap heap;
+          eval_stmt_list others heap frame class_descriptors
+      end
+
+
+and eval_stmt stmt heap frame cls_descs =
 
   let rec eval_expression e =
     match e.t_edesc with
@@ -163,10 +193,11 @@ let rec eval_stmt stmt heap frame cls_descs =
 
         let cls_d = Hashtbl.find cls_descs rt in
         let the_method = Hashtbl.find cls_d.c_methods m_sig in
-        print_endline ("**Call: " ^ mname);
-        eval_method the_method heap new_frame cls_descs;
-        print_endline ("**Finished Call: " ^ mname);
-        EVoid
+        print_endline ("######################### Call: " ^ mname);
+        let ret = eval_method the_method heap new_frame cls_descs in
+        print_endline ( "######################### Finished Call: "
+          ^ mname ^ "; return:" ^ string_of_value ret);
+        ret
 
     | _ -> raise(NotImplemented("eval_expression"))
 
@@ -208,28 +239,10 @@ let rec eval_stmt stmt heap frame cls_descs =
 
   in match stmt with
   | TVarDecl vd_list ->
-      List.iter (fun vd -> eval_var_decl vd ) vd_list
-  | TExpr e -> eval_expression e; ()
-  | TReturn(None) ->
-    print_endline "TODO: Return statement"; ()
-  | TReturn(Some e) ->
-  (*
-    TODO
-    let v = eval_expression e in
-    match v with 
-    *)
-    print_endline "TODO: Return statement"; ()
-  | _ -> ()
-
-
-and eval_method ep heap frame class_descriptors =
-  List.iter
-  (
-    fun stmt ->
-      eval_stmt stmt heap frame class_descriptors;
-      print_current_frame frame;
-      print_heap heap; ()
-  ) ep.t_mbody
+      List.iter (fun vd -> eval_var_decl vd ) vd_list; EVoid
+  | TExpr e -> eval_expression e; EVoid
+  | TReturn(Some e) -> eval_expression e
+  | _ -> EVoid
 
 
 (* find the main method *)
