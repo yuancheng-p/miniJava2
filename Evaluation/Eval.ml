@@ -99,8 +99,8 @@ and eval_stmt stmt heap frame cls_descs =
     | TVal (v, t) -> EValue(v)
     | TOp (e1, op, e2, t) ->
       begin
-        let v1 = eval_expression e1
-        and v2 = eval_expression e2 in
+        let v1 = deep_eval e1 frame
+        and v2 = deep_eval e2 frame in
         match op with
         | Op_add ->
             match v1, v2 with
@@ -163,8 +163,7 @@ and eval_stmt stmt heap frame cls_descs =
          * 2. find method tast
          * 3. eval the tast, passing a new frame
          * *)
-        (* FIXME: not sure ...*)
-        let ref = get_ref e frame in
+        let ref = deep_eval e frame in
         let new_frame = Env.define frame "this" ref in
         let t = Typing.type_of_typed_expr e in
 
@@ -193,6 +192,18 @@ and eval_stmt stmt heap frame cls_descs =
 
         let cls_d = Hashtbl.find cls_descs rt in
         let the_method = Hashtbl.find cls_d.c_methods m_sig in
+
+        (* Prepare the arguments for the new_frame,
+         * We don't support vararg for the moment!
+         * Therefore, the two lists have the same length.
+         * *)
+        List.map2
+        (
+          fun a e ->
+            let v = eval_expression e in
+            Env.add new_frame a.t_pident v;
+        ) the_method.t_margstype arg_list;
+
         print_endline ("######################### Call: " ^ mname);
         let ret = eval_method the_method heap new_frame cls_descs in
         print_endline ( "######################### Finished Call: "
@@ -201,7 +212,9 @@ and eval_stmt stmt heap frame cls_descs =
 
     | _ -> raise(NotImplemented("eval_expression"))
 
-    and get_ref e frame =
+    (* evaluate an expression, if the result is a reference,
+     * then return the reference's value from the current frame *)
+    and deep_eval e frame =
       let ref = eval_expression e in
       match ref with
       | EName(n) ->
@@ -222,9 +235,8 @@ and eval_stmt stmt heap frame cls_descs =
         begin
         match t with
         | Ref (rt) ->
-            (* TODO create instance *)
             let cls_d = Hashtbl.find cls_descs rt in
-            let ref = get_ref e frame in
+            let ref = deep_eval e frame in
             Env.add frame id ref; ()
         | Primitive (pt) ->
             (* put the value directely into the current frame *)
@@ -241,7 +253,7 @@ and eval_stmt stmt heap frame cls_descs =
   | TVarDecl vd_list ->
       List.iter (fun vd -> eval_var_decl vd ) vd_list; EVoid
   | TExpr e -> eval_expression e; EVoid
-  | TReturn(Some e) -> eval_expression e
+  | TReturn(Some e) -> deep_eval e frame
   | _ -> EVoid
 
 
