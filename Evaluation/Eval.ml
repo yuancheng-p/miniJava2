@@ -1,5 +1,6 @@
 open Env
 open Type
+open AST
 open TAST
 open Compiling
 open EnvType
@@ -101,13 +102,47 @@ and eval_stmt stmt heap frame cls_descs =
       begin
         let v1 = deep_eval e1 frame
         and v2 = deep_eval e2 frame in
+        print_endline ("v1, v2 : " ^ string_of_value v1 ^ " , " ^ string_of_value v2);
         match op with
         | Op_add ->
             match v1, v2 with
             | EValue(TInt(i1)), EValue(TInt(i2)) ->
-              let i = i1 + i2 in
-              print_endline ((string_of_int i1) ^ "+" ^ (string_of_int i2) ^ "=" ^ (string_of_int i)) ;
+              let i =
+                match op with
+                | Op_add -> i1 + i2
+                | Op_sub -> i1 - i2
+                | Op_mul -> i1 * i2
+                | Op_div -> i1 / i2
+                | Op_mod -> i1 mod i2
+              in print_endline ((string_of_int i1) ^ (string_of_infix_op op) ^ (string_of_int i2) ^ "=" ^ (string_of_int i)) ;
               EValue(TInt(i))
+            | EValue(TFloat(f1)), EValue(TInt(i2)) ->
+              let f =
+                match op with
+                | Op_add -> f1 +. float_of_int i2
+                | Op_sub -> f1 -. float_of_int i2
+                | Op_mul -> f1 *. float_of_int i2
+                | Op_div -> f1 /. float_of_int i2
+              in print_endline ((string_of_float f1) ^ (string_of_infix_op op) ^ (string_of_int i2) ^ "=" ^ (string_of_float f)) ;
+              EValue(TFloat(f))
+            | EValue(TInt(i1)), EValue(TFloat(f2)) ->
+              let f =
+                match op with
+                | Op_add -> float_of_int i1 +. f2
+                | Op_sub -> float_of_int i1 -. f2
+                | Op_mul -> float_of_int i1 *. f2
+                | Op_div -> float_of_int i1 /. f2
+              in print_endline ((string_of_int i1) ^ (string_of_infix_op op)  ^ (string_of_float f2) ^ "=" ^ (string_of_float f)) ;
+              EValue(TFloat(f))
+            | EValue(TFloat(f1)), EValue(TFloat(f2)) ->
+              let f =
+                match op with
+                | Op_add -> f1 +. f2
+                | Op_sub -> f1 -. f2
+                | Op_mul -> f1 *. f2
+                | Op_div -> f1 /. f2
+              in print_endline ((string_of_float f1) ^ (string_of_infix_op op) ^ (string_of_float f2) ^ "=" ^ (string_of_float f)) ;
+              EValue(TFloat(f))
         | _ -> raise(NotImplemented("TOp"))
       end
     | TAssignExp(e1, op, e2, t) ->
@@ -240,7 +275,8 @@ and eval_stmt stmt heap frame cls_descs =
             Env.add frame id ref; ()
         | Primitive (pt) ->
             (* put the value directely into the current frame *)
-            let v = eval_expression e in
+            (* FIXME not support short and float type *)
+            let v = deep_eval e frame in
             Env.add frame id v;
             ()
         | Array (at, i) -> ();
@@ -287,7 +323,6 @@ let eval t_ast class_descriptors =
   let heap = Hashtbl.create 100
   in
   (* TODO: initilization of static instances *)
-
   (* TODO: find entry point *)
   let ep = ref {
     t_mmodifiers = []; t_mname = ""; t_mreturntype = Void;
