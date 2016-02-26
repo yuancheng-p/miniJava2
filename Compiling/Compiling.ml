@@ -1,16 +1,21 @@
 open Type
 open TAST
 open Hashtbl
+open EnvType
 
 type cls_descriptor = {
   c_parent: ref_type;
   c_attributes: (string, TAST.t_astattribute) Hashtbl.t;
-  (* for the moment we use the name of the method for the key,
-   * please replace me by the full signature of the method.
-   * *)
-  c_methods: (string, TAST.t_astmethod) Hashtbl.t;
-(*  c_methods: (EnvType.t_method_signiture, TAST.t_astmethod) Hashtbl.t; *)
+  c_methods: (EnvType.t_method_signiture, TAST.t_astmethod) Hashtbl.t;
 }
+
+
+(* construct methods args using args in tast form *)
+let rec mk_t_t_args t_arguments l =
+  match t_arguments with
+  | [] -> l
+  | h::others ->
+      mk_t_t_args others ({tvararg=h.t_vararg;tptype=h.t_ptype}::l)
 
 
 let create_attr_table  attr_list =
@@ -31,10 +36,11 @@ let create_methods_table method_list =
   in List.iter (* foreach t_astmethod *)
   (
     fun m ->
-      (* TODO: identify method by its name and t_margstype (signature)
-       * in order to distinguish methods with different args
-       * *)
-      Hashtbl.add tb m.t_mname m
+      let m_sig = {
+        name = m.t_mname;
+        args = mk_t_t_args m.t_margstype [];
+      } in
+      Hashtbl.add tb m_sig m
   ) method_list; tb
 
 

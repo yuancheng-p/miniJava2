@@ -13,6 +13,8 @@ let define env n t =
 
 let add env n t = Hashtbl.add env n t
 
+let replace env n t = Hashtbl.replace env n t
+
 let iter f = Hashtbl.iter (fun s i -> f (s,i))
 
 let hashtbl_keys h = Hashtbl.fold (fun key _ l -> key :: l) h []

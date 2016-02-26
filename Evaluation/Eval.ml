@@ -1,10 +1,13 @@
+open Env
 open Type
 open TAST
 open Compiling
+open EnvType
 
 
 exception No_Entry_Point
 exception NotImplemented of string
+exception Action_Not_Supported of string
 
 
 let heap_size = ref 0
@@ -15,6 +18,8 @@ type evaled_expr =
   | ERef of int
   | EVoid
   | ENull
+
+exception Return_Val of evaled_expr
 
 
 let string_of_value v =
@@ -31,14 +36,15 @@ let string_of_value v =
   | EName (id) -> id
   | ERef (r) -> string_of_int r ^ " (ref)"
   | ENull -> "null"
+  | EVoid -> "void"
   | _ -> raise(NotImplemented("string_of_value"))
 
 
 let print_current_frame frame =
   print_endline "------ current frame ------";
-  Hashtbl.iter
+  Env.iter
   (
-    fun id v -> print_endline (id ^ " : " ^string_of_value v);
+    fun (id, v) -> print_endline (id ^ " : " ^string_of_value v);
   ) frame
 
 
@@ -59,15 +65,42 @@ let print_heap heap =
   ) heap
 
 
-let rec eval_stmt stmt heap frame cls_descs =
+let rec eval_method ep heap frame class_descriptors =
+  try
+    eval_stmt_list ep.t_mbody heap frame class_descriptors;
+    EVoid (* return void by default *)
+  with
+  | Return_Val (ret) -> ret
+  (* TODO: raise Java Exception *)
+
+
+and eval_stmt_list sl heap frame class_descriptors =
+  match sl with
+  | [] -> ()
+  | h::others -> begin
+      match h with
+      | TReturn(_) -> (* stop the eval *)
+          let ret = eval_stmt h heap frame class_descriptors in
+          print_current_frame frame;
+          print_heap heap;
+          raise (Return_Val(ret))
+      | _ ->
+          eval_stmt h heap frame class_descriptors;
+          print_current_frame frame;
+          print_heap heap;
+          eval_stmt_list others heap frame class_descriptors
+      end
+
+
+and eval_stmt stmt heap frame cls_descs =
 
   let rec eval_expression e =
     match e.t_edesc with
     | TVal (v, t) -> EValue(v)
     | TOp (e1, op, e2, t) ->
       begin
-        let v1 = eval_expression e1
-        and v2 = eval_expression e2 in
+        let v1 = deep_eval e1 frame
+        and v2 = deep_eval e2 frame in
         match op with
         | Op_add ->
             match v1, v2 with
@@ -84,7 +117,7 @@ let rec eval_stmt stmt heap frame cls_descs =
         match op with
         | Assign ->
             print_endline ("+++Assign:" ^ (string_of_value v));
-            Hashtbl.replace frame (string_of_value variable) v;
+            Env.replace frame (string_of_value variable) v;
             EVoid
       end
     | TName (id, t) -> EName(id)
@@ -114,7 +147,6 @@ let rec eval_stmt stmt heap frame cls_descs =
                       Hashtbl.add obj_tbl k (EValue(TChar(None)))
                     | Boolean ->
                       Hashtbl.add obj_tbl k (EValue(TBoolean(false)))
-                    (*TODO Double, Boolean, etc. *)
                   end
                 | Ref(r) ->
                     (* reference type attributes are initialized with null value *)
@@ -126,7 +158,69 @@ let rec eval_stmt stmt heap frame cls_descs =
         Hashtbl.add heap ref_id obj_tbl;
         heap_size := !heap_size + 1;
         ERef(ref_id)
+    | TCall (Some e, mname, arg_list, t) ->
+        (* 1. copy the frame
+         * 2. find method tast
+         * 3. eval the tast, passing a new frame
+         * *)
+        let ref = deep_eval e frame in
+        let new_frame = Env.define frame "this" ref in
+        let t = Typing.type_of_typed_expr e in
+
+        let rec construct_arg_list_by_texpr_list el result_list =
+          match el with
+          | [] -> List.rev result_list
+          | h::q ->
+            begin
+              let targ = Typing.type_of_typed_expr h in
+              construct_arg_list_by_texpr_list q
+                  (List.append result_list [{tvararg = false;tptype = targ}])
+            end
+        in
+
+        let m_sig = {
+          name = mname;
+          args = (construct_arg_list_by_texpr_list arg_list [])
+        } in
+
+        let rt =
+          begin
+            match t with
+            | Ref(r) -> r
+            | _ -> raise(Action_Not_Supported("cannot call method of primitive type"))
+          end in
+
+        let cls_d = Hashtbl.find cls_descs rt in
+        let the_method = Hashtbl.find cls_d.c_methods m_sig in
+
+        (* Prepare the arguments for the new_frame,
+         * We don't support vararg for the moment!
+         * Therefore, the two lists have the same length.
+         * *)
+        List.map2
+        (
+          fun a e ->
+            let v = eval_expression e in
+            Env.add new_frame a.t_pident v;
+        ) the_method.t_margstype arg_list;
+
+        print_endline ("######################### Call: " ^ mname);
+        let ret = eval_method the_method heap new_frame cls_descs in
+        print_endline ( "######################### Finished Call: "
+          ^ mname ^ "; return:" ^ string_of_value ret);
+        ret
+
     | _ -> raise(NotImplemented("eval_expression"))
+
+    (* evaluate an expression, if the result is a reference,
+     * then return the reference's value from the current frame *)
+    and deep_eval e frame =
+      let ref = eval_expression e in
+      match ref with
+      | EName(n) ->
+          Env.find frame n
+      | _ -> ref
+
 
   (* for understanding local variable initialization,
    * see: http://stackoverflow.com/questions/2187632/why-does-javac-complain-about-not-initialized-variable
@@ -141,20 +235,13 @@ let rec eval_stmt stmt heap frame cls_descs =
         begin
         match t with
         | Ref (rt) ->
-            (* TODO create instance *)
-            let cls_d = Hashtbl.find cls_descs rt;
-            in let ref = eval_expression e;
-            in let ref =
-            match ref with
-            | EName(n) ->
-                Hashtbl.find frame n;
-            | _ ->
-                ref;
-            in Hashtbl.add frame id ref; ()
+            let cls_d = Hashtbl.find cls_descs rt in
+            let ref = deep_eval e frame in
+            Env.add frame id ref; ()
         | Primitive (pt) ->
             (* put the value directely into the current frame *)
             let v = eval_expression e in
-            Hashtbl.add frame id v;
+            Env.add frame id v;
             ()
         | Array (at, i) -> ();
         | _ -> ();
@@ -164,19 +251,10 @@ let rec eval_stmt stmt heap frame cls_descs =
 
   in match stmt with
   | TVarDecl vd_list ->
-      List.iter (fun vd -> eval_var_decl vd ) vd_list
-  | TExpr e -> eval_expression e; ()
-  | _ -> ()
-
-
-let eval_entry_point ep heap frame class_descriptors =
-  List.iter
-  (
-    fun stmt ->
-      eval_stmt stmt heap frame class_descriptors;
-      print_current_frame frame;
-      print_heap heap; ()
-  ) ep.t_mbody
+      List.iter (fun vd -> eval_var_decl vd ) vd_list; EVoid
+  | TExpr e -> eval_expression e; EVoid
+  | TReturn(Some e) -> deep_eval e frame
+  | _ -> EVoid
 
 
 (* find the main method *)
@@ -218,6 +296,6 @@ let eval t_ast class_descriptors =
   find_entry_point t_ast.t_type_list ep;
   print_entry_point !ep;
 
-  let frame = Hashtbl.create 1;
-  in eval_entry_point !ep heap frame class_descriptors;
+  let frame = Env.initial();
+  in eval_method !ep heap frame class_descriptors;
   ();

@@ -416,11 +416,12 @@ let rec type_method_list env l =
      * it is used for local variable redifinition check.
      * *)
     let method_env = Env.initial() in
+    let argstype = type_method_args_list env method_env m.margstype in
     {
       t_mmodifiers = m.mmodifiers;
       t_mname = m.mname;
       t_mreturntype = m.mreturntype;
-      t_margstype = type_method_args_list env method_env m.margstype;
+      t_margstype = argstype;
       t_mbody = List.rev(type_statement_list env method_env (List.rev m.mbody) true m.mreturntype);
       t_mthrows = m.mthrows;
     }
