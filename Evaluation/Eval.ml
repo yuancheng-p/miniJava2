@@ -2,6 +2,7 @@ open Env
 open Type
 open TAST
 open Compiling
+open EnvType
 
 
 exception No_Entry_Point
@@ -137,6 +138,22 @@ let rec eval_stmt stmt heap frame cls_descs =
         let new_frame = Env.define frame "this" ref in
         let t = Typing.type_of_typed_expr e in
 
+        let rec construct_arg_list_by_texpr_list el result_list =
+          match el with
+          | [] -> List.rev result_list
+          | h::q ->
+            begin
+              let targ = Typing.type_of_typed_expr h in
+              construct_arg_list_by_texpr_list q
+                  (List.append result_list [{tvararg = false;tptype = targ}])
+            end
+        in
+
+        let m_sig = {
+          name = mname;
+          args = (construct_arg_list_by_texpr_list arg_list [])
+        } in
+
         let rt =
           begin
             match t with
@@ -145,7 +162,7 @@ let rec eval_stmt stmt heap frame cls_descs =
           end in
 
         let cls_d = Hashtbl.find cls_descs rt in
-        let the_method = Hashtbl.find cls_d.c_methods mname in (* TODO *)
+        let the_method = Hashtbl.find cls_d.c_methods m_sig in
         print_endline ("**Call: " ^ mname);
         eval_method the_method heap new_frame cls_descs;
         print_endline ("**Finished Call: " ^ mname);
