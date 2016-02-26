@@ -289,6 +289,17 @@ and eval_stmt stmt heap frame cls_descs =
   | TVarDecl vd_list ->
       List.iter (fun vd -> eval_var_decl vd ) vd_list; EVoid
   | TExpr e -> eval_expression e; EVoid
+  | TBlock(sl) ->
+      let new_frame = Env.copy frame in
+      eval_stmt_list sl heap new_frame cls_descs;
+      (* update the current frame's data *)
+      Env.iter
+      (
+        fun (k, v) ->
+          if Env.mem frame k then
+            Env.replace frame k v
+      ) new_frame;
+      EVoid
   | TReturn(Some e) -> deep_eval e frame
   | _ -> EVoid
 

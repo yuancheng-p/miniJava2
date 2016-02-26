@@ -6,6 +6,8 @@ let find env = Hashtbl.find env
 
 let mem env = Hashtbl.mem env
 
+let copy env = Hashtbl.copy env
+
 let define env n t =
   let result = Hashtbl.copy env in
     Hashtbl.add result n t;
