@@ -98,6 +98,8 @@ let type_of_typed_expr t_e =
   | TName(id, t) -> t
   | TAttr(e, s, t) -> t
   | TCall(eo, s, el, t) -> t
+  | TPost(e, postop , t) ->t
+  | TPre(preop, e , t) ->t
   | _ -> raise(NotImplemented("type_of_typed_expr"))
 
 
@@ -122,6 +124,8 @@ let rec type_expression_desc env method_env edesc =
   | AssignExp(e1,assign_op,e2) -> type_assign_exp env method_env e1 assign_op e2
   | Attr(e, s) -> type_e_attr env method_env e s
   | Call(eo, s, el) -> type_e_call env method_env eo s el
+  | Post(e, postop) -> type_e_post env method_env e postop
+  | Pre(preop, e) -> type_e_pre env method_env preop e
   | _ -> TVoidClass (* a small cheat to avoid Match_failure *)
 
 
@@ -323,6 +327,39 @@ and type_e_call env method_env eo s el =
       TCall(None, s, typed_arg_list el [], the_method.return_type)
       else raise(Method_Not_exist(s))
 
+
+(* the primitive type excepte boolean, the others can use post operation '++','--' *)
+and type_e_post env method_env e postop =
+  let typed_e1 = type_expression env method_env e in
+  let t1 = type_of_typed_expr typed_e1 in
+  match t1 with
+  | Primitive(p) ->
+    begin
+      match p with
+      | Long -> TPost(typed_e1, postop, t1)
+      | Int -> TPost(typed_e1, postop, t1)
+      | Float -> TPost(typed_e1, postop, t1)
+      | Short -> TPost(typed_e1, postop, t1)
+      | Double -> TPost(typed_e1, postop, t1)
+      | Char -> TPost(typed_e1, postop, t1)
+      | Byte -> TPost(typed_e1, postop, t1)
+      | _ -> raise(Type_Mismatch(Type.stringOf t1 ^" can not convert to int"))
+    end
+  | _ -> raise(Type_Mismatch(Type.stringOf t1 ^" can not convert to int"))
+
+
+(* boolean use pre operation '!' '~' question: '~' is not support for in eclipse java *)
+and type_e_pre env method_env preop e =
+  let typed_e1 = type_expression env method_env e in
+  let t1 = type_of_typed_expr typed_e1 in
+  match t1 with
+  | Primitive(p) ->
+    begin
+      match p with
+      | Boolean -> TPre(preop, typed_e1, t1)
+      | _ -> raise(Type_Mismatch(Type.stringOf t1 ^" can not convert to boolean"))
+    end
+  | _ -> raise(Type_Mismatch(Type.stringOf t1 ^" can not convert to boolean"))
 
 (* check if a ref type exists in global_env*)
 let check_type_ref_in_env t id env = 
