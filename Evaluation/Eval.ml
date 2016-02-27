@@ -167,6 +167,24 @@ and eval_stmt stmt heap frame cls_descs =
             Env.replace frame (string_of_value variable) v;
             EVoid
       end
+    | TPost (e, op, t) ->
+        let n = eval_expression e
+        and v = deep_eval e frame
+        in begin
+        match n, v with
+        | EName(name), EValue(TInt(i)) ->
+            begin
+            match op with
+            | Incr ->
+              let new_v = EValue(TInt(i+1))
+              in Env.replace frame name new_v;
+              v
+            | Decr ->
+              let new_v = EValue(TInt(i-1))
+              in Env.replace frame name new_v;
+              v
+            end
+        end
     | TName (id, t) -> EName(id)
     | TNew (None, qname, el, Ref(rt)) ->
         let cls_d = Hashtbl.find cls_descs rt in
