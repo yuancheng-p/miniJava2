@@ -364,17 +364,17 @@ let rec type_var_decl_list env method_env vd_list =
 (* is_call determines if the statment list is a method,
  * if true, then the mreturntype is taken into account *)
 let rec type_statement_list env method_env l is_call mreturntype =
-  let rec type_statment stmt =
+  let rec type_statment method_env stmt =
     match stmt with
     | VarDecl vd_list -> TVarDecl(type_var_decl_list env method_env vd_list)
     | Expr e -> TExpr(type_expression env method_env e)
-    | Block b -> TBlock(List.map type_statment b)
+    | Block b -> TBlock(List.map (type_statment (Env.copy method_env))b)
     | If(e,s,None) ->
-        TIf(type_condition_expr e, type_statment s, None)
+        TIf(type_condition_expr e, type_statment method_env s, None)
     | If(e,s1,Some s2) ->
-        TIf(type_condition_expr e, type_statment s1, Some (type_statment s2))
+        TIf(type_condition_expr e, type_statment method_env s1, Some (type_statment method_env s2))
     | While (e, s) ->
-        TWhile(type_condition_expr e, type_statment s)
+        TWhile(type_condition_expr e, type_statment (Env.copy method_env) s)
     | Return(Some e) -> type_return_stmt e
     | Return(None) -> type_none_return_stmt;
     | _ -> TNop (* a small cheat to avoid Match_failure *)
@@ -402,7 +402,7 @@ let rec type_statement_list env method_env l is_call mreturntype =
 
   in match l with
     | [] -> []
-    | h::others -> (type_statment h)::(type_statement_list env method_env others is_call mreturntype)
+    | h::others -> (type_statment method_env h)::(type_statement_list env method_env others is_call mreturntype)
 
 let rec type_method_args_list env method_env l =
   let check_method_local_variable_redefined method_env id =
