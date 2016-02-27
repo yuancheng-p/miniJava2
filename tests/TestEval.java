@@ -16,6 +16,14 @@ public class TestEval {
       b = false;
       boolean v2 = true;
     }
+
+    // test if else
+    if (a > 0 && false) {
+      c = a;
+      int temp = 110;
+    } else {
+      c = a + 2;
+    }
   }
 
   public int bar () {

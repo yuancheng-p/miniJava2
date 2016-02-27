@@ -103,8 +103,9 @@ and eval_stmt stmt heap frame cls_descs =
         let v1 = deep_eval e1 frame
         and v2 = deep_eval e2 frame in
         print_endline ("v1, v2 : " ^ string_of_value v1 ^ " , " ^ string_of_value v2);
+        let val_of_condition c = if c then EValue(TBoolean(true)) else EValue(TBoolean(false)) in
         match op with
-        | Op_add ->
+        | Op_add | Op_sub | Op_mul | Op_div | Op_mod -> begin
             match v1, v2 with
             | EValue(TInt(i1)), EValue(TInt(i2)) ->
               let i =
@@ -143,7 +144,18 @@ and eval_stmt stmt heap frame cls_descs =
                 | Op_div -> f1 /. f2
               in print_endline ((string_of_float f1) ^ (string_of_infix_op op) ^ (string_of_float f2) ^ "=" ^ (string_of_float f)) ;
               EValue(TFloat(f))
-        | _ -> raise(NotImplemented("TOp"))
+        end
+        | Op_eq -> val_of_condition(v1 = v2)
+        | Op_ne -> val_of_condition(v1 != v2)
+        | Op_gt -> val_of_condition(v1 > v2)
+        | Op_lt -> val_of_condition(v1 < v2)
+        | Op_ge -> val_of_condition(v1 >= v2)
+        | Op_le -> val_of_condition(v1 <= v2)
+        | Op_cor ->
+            val_of_condition(v1 = EValue(TBoolean(true)) || v2 = EValue(TBoolean(true)))
+        | Op_cand ->
+            val_of_condition(v1 = EValue(TBoolean(true)) && v2 = EValue(TBoolean(true)))
+        | _ -> raise(NotImplemented("operator not supported yet."))
       end
     | TAssignExp(e1, op, e2, t) ->
       begin
@@ -300,6 +312,20 @@ and eval_stmt stmt heap frame cls_descs =
             Env.replace frame k v
       ) new_frame;
       EVoid
+  | TIf (e, s, None) ->
+      let v = eval_expression e in
+      if v = (EValue(TBoolean(true))) then begin
+        eval_stmt s heap frame cls_descs; EVoid
+      end
+      else EVoid
+  | TIf (e, s1, Some s2) ->
+      let v = eval_expression e in
+      if v = (EValue(TBoolean(true))) then begin
+        eval_stmt s1 heap frame cls_descs; EVoid
+      end
+      else begin
+        eval_stmt s2 heap frame cls_descs; EVoid
+      end
   | TReturn(Some e) -> deep_eval e frame
   | _ -> EVoid
 
