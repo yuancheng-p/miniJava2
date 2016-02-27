@@ -336,30 +336,27 @@ and type_e_post env method_env e postop =
   | Primitive(p) ->
     begin
       match p with
-      | Long -> TPost(typed_e1, postop, t1)
-      | Int -> TPost(typed_e1, postop, t1)
-      | Float -> TPost(typed_e1, postop, t1)
-      | Short -> TPost(typed_e1, postop, t1)
-      | Double -> TPost(typed_e1, postop, t1)
-      | Char -> TPost(typed_e1, postop, t1)
-      | Byte -> TPost(typed_e1, postop, t1)
+      | Long | Int | Float | Short | Double | Char | Byte -> TPost(typed_e1, postop, t1)
       | _ -> raise(Type_Mismatch(Type.stringOf t1 ^" can not convert to int"))
     end
   | _ -> raise(Type_Mismatch(Type.stringOf t1 ^" can not convert to int"))
 
-
-(* boolean use pre operation '!' '~' question: '~' is not support for in eclipse java *)
+(* boolean can just support '!', double, float can not support ~ *)
 and type_e_pre env method_env preop e =
   let typed_e1 = type_expression env method_env e in
   let t1 = type_of_typed_expr typed_e1 in
   match t1 with
   | Primitive(p) ->
     begin
-      match p with
-      | Boolean -> TPre(preop, typed_e1, t1)
-      | _ -> raise(Type_Mismatch(Type.stringOf t1 ^" can not convert to boolean"))
+      match p,preop with
+      | Boolean, Op_not -> TPre(preop, typed_e1, t1)
+      | Boolean, _ -> raise(Type_Mismatch("boolean can not support "^AST.string_of_prefix_op preop ^" operation"))
+      | Float, Op_bnot | Double, Op_bnot -> raise(Type_Mismatch(Type.stringOf t1 ^" can not support '~' operation"))
+      | _ , Op_not -> raise(Type_Mismatch(Type.stringOf t1 ^" can not support '!' operation "))
+      | _, _ -> TPre(preop, typed_e1, t1)
     end
   | _ -> raise(Type_Mismatch(Type.stringOf t1 ^" can not convert to boolean"))
+
 
 (* check if a ref type exists in global_env*)
 let check_type_ref_in_env t id env = 
