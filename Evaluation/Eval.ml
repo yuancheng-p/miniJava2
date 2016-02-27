@@ -177,12 +177,10 @@ and eval_stmt stmt heap frame cls_descs =
               match op with
               | Incr ->
                 let new_v = EValue(TInt(i+1))
-                in Env.replace frame name new_v;
-                v
+                in Env.replace frame name new_v; v
               | Decr ->
                 let new_v = EValue(TInt(i-1))
-                in Env.replace frame name new_v;
-                v
+                in Env.replace frame name new_v; v
             end
         end
     | TPre (op, e, t) ->
@@ -194,18 +192,13 @@ and eval_stmt stmt heap frame cls_descs =
           | EName(name), EValue(TInt(i)) ->
             begin
               match op with
-              | Op_neg ->
-                let new_v = EValue(TInt(-i))
-                in Env.replace frame name new_v;
-                new_v
+              | Op_neg -> EValue(TInt(-i))
               | Op_incr ->
                 let new_v = EValue(TInt(i+1))
-                in Env.replace frame name new_v;
-                new_v
+                in Env.replace frame name new_v; new_v
               | Op_decr ->
                 let new_v = EValue(TInt(i-1))
-                in Env.replace frame name new_v;
-                new_v
+                in Env.replace frame name new_v; new_v
             end
           | EName(name), EValue(TBoolean(b)) ->
             begin
@@ -213,10 +206,8 @@ and eval_stmt stmt heap frame cls_descs =
               | Op_not ->
                 let new_v =
                   match b with
-                  | false ->
-                    EValue(TBoolean(true))
-                  | true ->
-                    EValue(TBoolean(false))
+                  | false -> EValue(TBoolean(true))
+                  | true -> EValue(TBoolean(false))
                 in new_v
             end
         end
