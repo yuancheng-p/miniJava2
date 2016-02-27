@@ -326,6 +326,10 @@ and eval_stmt stmt heap frame cls_descs =
       else begin
         eval_stmt s2 heap frame cls_descs; EVoid
       end
+  | TWhile(e, s) ->
+      while ((eval_expression e) = EValue(TBoolean(true))) do
+        eval_stmt s heap frame cls_descs
+      done; EVoid
   | TReturn(Some e) -> deep_eval e frame
   | _ -> EVoid
 

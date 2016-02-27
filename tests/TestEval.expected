@@ -1,6 +1,7 @@
 successfull parsing
 start typing
 check add and methods:TestEval:main
+check add and methods:TestEval:test_while
 check add and methods:TestEval:bar
 check add and methods:TestEval:add
 check add and methods:TestEval:foo
@@ -17,6 +18,7 @@ method : foo
 method : bar
 method : main paramlist: String[] 
 method : add paramlist: int  paramlist: int 
+method : test_while
 end typing
 main
 ------ current frame ------
@@ -112,6 +114,51 @@ c : 3.2 (float)
 === heap ===
 [0] :
 [1] :
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+c : 3.2 (float)
+=== heap ===
+[0] :
+[1] :
+######################### Call: test_while
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+this : 0 (ref)
+c : 3.2 (float)
+i : 0 (int)
+=== heap ===
+[0] :
+[1] :
+v1, v2 : 0 (int) , 2 (int)
+v1, v2 : 0 (int) , 100 (int)
+0+100=100
++++Assign:100 (int)
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+this : 0 (ref)
+c : 3.2 (float)
+i : 100 (int)
+=== heap ===
+[0] :
+[1] :
+v1, v2 : 100 (int) , 2 (int)
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+this : 0 (ref)
+c : 3.2 (float)
+i : 100 (int)
+=== heap ===
+[0] :
+[1] :
+######################### Finished Call: test_while; return:void
 ------ current frame ------
 a : 1.2 (float)
 te : 0 (ref)

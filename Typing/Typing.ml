@@ -373,6 +373,8 @@ let rec type_statement_list env method_env l is_call mreturntype =
         TIf(type_condition_expr e, type_statment s, None)
     | If(e,s1,Some s2) ->
         TIf(type_condition_expr e, type_statment s1, Some (type_statment s2))
+    | While (e, s) ->
+        TWhile(type_condition_expr e, type_statment s)
     | Return(Some e) -> type_return_stmt e
     | Return(None) -> type_none_return_stmt;
     | _ -> TNop (* a small cheat to avoid Match_failure *)

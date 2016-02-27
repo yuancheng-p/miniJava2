@@ -24,6 +24,15 @@ public class TestEval {
     } else {
       c = a + 2;
     }
+
+    te.test_while();
+  }
+
+  public void test_while() {
+    int i = 0;
+    while (i < 2) {
+      i = i + 100;
+    }
   }
 
   public int bar () {
