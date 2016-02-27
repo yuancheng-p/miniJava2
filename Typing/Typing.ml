@@ -11,7 +11,7 @@ let g_class_ref = ref {tpath=[]; tid=""};;
 exception Null_Not_Allowed of string
 exception Action_Not_Supported of string
 exception NotImplemented of string
-exception SyntaxError
+exception SyntaxError of string
 exception Method_Local_Variable_Redefined of string
 exception UnknownType of string
 exception Variable_Not_Defined of string
@@ -133,16 +133,46 @@ and type_op env method_env e1 e2 op =
   in match t1, t2 with
     | Primitive(p1), Primitive(p2)
     -> begin
-      (*TODO: more complexe types check *)
-         match p1, p2 with
-         | Int, Int
-         -> TOp(typed_e1, op, typed_e2, Primitive(Type.Int))
-         | Float, _
-         -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
-         | _, Float
-         -> TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
-         | _, _
-         -> raise(NotImplemented("TOp"))
+        match op with
+        | Op_add | Op_sub | Op_mul | Op_div | Op_mod -> begin
+          if p1 = p2 then
+            TOp(typed_e1, op, typed_e2, Primitive(p1))
+          else begin
+            match p1, p2 with
+            | Float, _ | _, Float
+            | Double, _ | _, Double ->
+                TOp(typed_e1, op, typed_e2, Primitive(Type.Double))
+            | Long, _ | _, Long ->
+                TOp(typed_e1, op, typed_e2, Primitive(Type.Long))
+            | Int, _ | _, Int ->
+                TOp(typed_e1, op, typed_e2, Primitive(Type.Int))
+            | Short, _ | _, Short ->
+                TOp(typed_e1, op, typed_e2, Primitive(Type.Short))
+            | Char, _ | _, Char ->
+                TOp(typed_e1, op, typed_e2, Primitive(Type.Char))
+            | Byte, _ | _, Byte ->
+                TOp(typed_e1, op, typed_e2, Primitive(Type.Byte))
+            | _, _ -> raise(SyntaxError(
+              "unsupported type for calculation operators."))
+          end
+        end
+        | Op_eq | Op_ne | Op_gt | Op_lt | Op_ge | Op_le -> begin
+          match p1, p2 with
+          | Boolean, _ | _, Boolean ->
+            raise (SyntaxError(
+                "comparation operators are undefined for boolean"))
+          | _, _ -> TOp(typed_e1, op, typed_e2, Primitive(Type.Boolean))
+        end
+        | Op_cor | Op_cand -> begin
+          match p1, p2 with
+          | Boolean, Boolean ->
+            TOp(typed_e1, op, typed_e2, Primitive(Type.Boolean))
+          | _, _ ->
+            raise (SyntaxError(
+                "'&&, ||' operators are undefined for non-boolean"))
+        end
+        | _ -> raise(NotImplemented("unsupported operator."))
+
        end
 
     | Ref(r1), Ref(r2)
@@ -339,12 +369,23 @@ let rec type_statement_list env method_env l is_call mreturntype =
     | VarDecl vd_list -> TVarDecl(type_var_decl_list env method_env vd_list)
     | Expr e -> TExpr(type_expression env method_env e)
     | Block b -> TBlock(List.map type_statment b)
-    | If(e,s,None) -> TIf(type_expression env method_env e, type_statment s, None)
-    | If(e,s1,Some s2) -> TIf(type_expression env method_env e, type_statment s1, Some (type_statment s2))
+    | If(e,s,None) ->
+        TIf(type_condition_expr e, type_statment s, None)
+    | If(e,s1,Some s2) ->
+        TIf(type_condition_expr e, type_statment s1, Some (type_statment s2))
+    | While (e, s) ->
+        TWhile(type_condition_expr e, type_statment s)
     | Return(Some e) -> type_return_stmt e
     | Return(None) -> type_none_return_stmt;
     | _ -> TNop (* a small cheat to avoid Match_failure *)
     (*TODO: check and type all the statments here *)
+
+  and type_condition_expr e =
+    let typed_e = type_expression env method_env e in
+    let t = type_of_typed_expr typed_e in
+    match t with
+    | Primitive(Boolean) -> typed_e
+    | _ -> raise(SyntaxError("condition expects a boolean type expression."))
 
   and type_return_stmt e =
     if not is_call then

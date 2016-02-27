@@ -1,14 +1,169 @@
 successfull parsing
 start typing
-check add and methods:TestOp:test
-check add and methods:TestOp:main
+check add and methods:TestEval:main
+check add and methods:TestEval:test_while
+check add and methods:TestEval:bar
+check add and methods:TestEval:add
+check add and methods:TestEval:foo
+check add and methods:Node:foobar
 --------- env --------
 Boolean : class_env(parent=: Object)
 Integer : class_env(parent=: Object)
+Node : class_env(parent=: Object)
+method : foobar
 Object : class_env(parent=: )
 String : class_env(parent=: Object)
-TestOp : class_env(parent=: Object)
-method : test
-method : main
+TestEval : class_env(parent=: Object)
+method : foo
+method : bar
+method : main paramlist: String[] 
+method : add paramlist: int  paramlist: int 
+method : test_while
 end typing
 main
+------ current frame ------
+a : 1.2 (float)
+=== heap ===
+v1, v2 : 1.2 (float) , 1.2 (float)
+1.2+1.2=2.4
+------ current frame ------
+a : 1.2 (float)
+c : 2.4 (float)
+=== heap ===
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+c : 2.4 (float)
+=== heap ===
+[0] :
+######################### Call: bar
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+this : 0 (ref)
+c : 2.4 (float)
+=== heap ===
+[0] :
+[1] :
+######################### Finished Call: bar; return:888 (int)
+######################### Call: add
+v1, v2 : 122 (int) , 888 (int)
+122+888=1010
+------ current frame ------
+a : 122 (int)
+a : 1.2 (float)
+te : 0 (ref)
+b : 888 (int)
+this : 1 (ref)
+c : 2.4 (float)
+=== heap ===
+[0] :
+[1] :
+######################### Finished Call: add; return:1010 (int)
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+c : 2.4 (float)
+=== heap ===
+[0] :
+[1] :
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : true (boolean)
+c : 2.4 (float)
+=== heap ===
+[0] :
+[1] :
++++Assign:false (boolean)
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+c : 2.4 (float)
+=== heap ===
+[0] :
+[1] :
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+v2 : true (boolean)
+c : 2.4 (float)
+=== heap ===
+[0] :
+[1] :
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+c : 2.4 (float)
+=== heap ===
+[0] :
+[1] :
+v1, v2 : 1.2 (float) , 0 (int)
+v1, v2 : true (boolean) , false (boolean)
+v1, v2 : 1.2 (float) , 2 (int)
+1.2+2=3.2
++++Assign:3.2 (float)
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+c : 3.2 (float)
+=== heap ===
+[0] :
+[1] :
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+c : 3.2 (float)
+=== heap ===
+[0] :
+[1] :
+######################### Call: test_while
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+this : 0 (ref)
+c : 3.2 (float)
+i : 0 (int)
+=== heap ===
+[0] :
+[1] :
+v1, v2 : 0 (int) , 2 (int)
+v1, v2 : 0 (int) , 100 (int)
+0+100=100
++++Assign:100 (int)
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+this : 0 (ref)
+c : 3.2 (float)
+i : 100 (int)
+=== heap ===
+[0] :
+[1] :
+v1, v2 : 100 (int) , 2 (int)
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+this : 0 (ref)
+c : 3.2 (float)
+i : 100 (int)
+=== heap ===
+[0] :
+[1] :
+######################### Finished Call: test_while; return:void
+------ current frame ------
+a : 1.2 (float)
+te : 0 (ref)
+b : false (boolean)
+c : 3.2 (float)
+=== heap ===
+[0] :
+[1] :

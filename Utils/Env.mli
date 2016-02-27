@@ -11,6 +11,8 @@ val find : ('a,'b) t -> 'a -> 'b
 (* is the key associated to a value is the environment *)
 val mem : ('a,'b) t -> 'a -> bool
 
+val copy : ('a, 'b) t -> ('a, 'b) t
+
 (* define a key with the value associated *)
 val define : ('a,'b) t -> 'a -> 'b -> ('a,'b) t
 
