@@ -171,18 +171,53 @@ and eval_stmt stmt heap frame cls_descs =
         let n = eval_expression e
         and v = deep_eval e frame
         in begin
-        match n, v with
-        | EName(name), EValue(TInt(i)) ->
+          match n, v with
+          | EName(name), EValue(TInt(i)) ->
             begin
-            match op with
-            | Incr ->
-              let new_v = EValue(TInt(i+1))
-              in Env.replace frame name new_v;
-              v
-            | Decr ->
-              let new_v = EValue(TInt(i-1))
-              in Env.replace frame name new_v;
-              v
+              match op with
+              | Incr ->
+                let new_v = EValue(TInt(i+1))
+                in Env.replace frame name new_v;
+                v
+              | Decr ->
+                let new_v = EValue(TInt(i-1))
+                in Env.replace frame name new_v;
+                v
+            end
+        end
+    | TPre (op, e, t) ->
+        let n = eval_expression e
+        and v = deep_eval e frame
+        in begin
+          print_endline ("TPre");
+          match n, v with
+          | EName(name), EValue(TInt(i)) ->
+            begin
+              match op with
+              | Op_neg ->
+                let new_v = EValue(TInt(-i))
+                in Env.replace frame name new_v;
+                new_v
+              | Op_incr ->
+                let new_v = EValue(TInt(i+1))
+                in Env.replace frame name new_v;
+                new_v
+              | Op_decr ->
+                let new_v = EValue(TInt(i-1))
+                in Env.replace frame name new_v;
+                new_v
+            end
+          | EName(name), EValue(TBoolean(b)) ->
+            begin
+              match op with
+              | Op_not ->
+                let new_v =
+                  match b with
+                  | false ->
+                    EValue(TBoolean(true))
+                  | true ->
+                    EValue(TBoolean(false))
+                in new_v
             end
         end
     | TName (id, t) -> EName(id)
