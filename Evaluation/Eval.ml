@@ -111,7 +111,6 @@ let rec eval_method ep heap frame class_descriptors =
   | Return_Val (ret) -> ret
   (* TODO: raise Java Exception *)
 
-
 and eval_stmt_list sl heap frame class_descriptors =
   match sl with
   | [] -> ()
@@ -292,6 +291,40 @@ and eval_stmt stmt heap frame cls_descs =
                     Hashtbl.add obj_tbl k ENull
               end
         ) attrs;
+
+        let ref_id = !heap_size in
+        let new_frame = Env.define frame "this" (ERef(ref_id)) in
+        let rec construct_arg_list_by_texpr_list el result_list =
+          match el with
+          | [] -> List.rev result_list
+          | h::q ->
+            begin
+              let targ = Typing.type_of_typed_expr h in
+              construct_arg_list_by_texpr_list q
+                  (List.append result_list [{tvararg = false;tptype = targ}])
+            end
+        in
+        let cname = List.nth qname ((List.length qname)-1) in
+        let m_sig = {
+          name = cname;
+          args = construct_arg_list_by_texpr_list el []
+        } in
+        let the_method = Hashtbl.find cls_d.c_constructors m_sig in
+        (* Prepare the arguments for the new_frame,
+         * We don't support vararg for the moment!
+         * Therefore, the two lists have the same length.
+         * *)
+        List.map2
+        (
+          fun a e ->
+            let v = eval_expression e in
+            Env.add new_frame a.t_pident v;
+        ) the_method.t_cargstype el;
+
+        print_endline ("######################### Call Constructor: " ^ cname);
+        eval_stmt_list the_method.t_cbody heap new_frame cls_descs;
+        print_endline ( "######################### Finished Call Constructor: "
+          ^ cname);
 
         let ref_id = !heap_size in
         Hashtbl.add heap ref_id {obj_t=Ref(rt);obj_tbl=obj_tbl};

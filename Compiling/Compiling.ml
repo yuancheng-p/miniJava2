@@ -7,6 +7,7 @@ type cls_descriptor = {
   c_parent: ref_type;
   c_attributes: (string, TAST.t_astattribute) Hashtbl.t;
   c_methods: (EnvType.t_method_signiture, TAST.t_astmethod) Hashtbl.t;
+  c_constructors: (EnvType.t_method_signiture, TAST.t_astconst) Hashtbl.t;
 }
 
 
@@ -43,6 +44,20 @@ let create_methods_table method_list =
       Hashtbl.add tb m_sig m
   ) method_list; tb
 
+let create_consts_table constructor_list =
+  (* return a hash table with
+   * methods signature as key, method t_ast as value
+   * *)
+  let tb = Hashtbl.create 30
+  in List.iter (* foreach t_astmethod *)
+  (
+    fun m ->
+      let m_sig = {
+        name = m.t_cname;
+        args = mk_t_t_args m.t_cargstype [];
+      } in
+      Hashtbl.add tb m_sig m
+  ) constructor_list; tb
 
 (* load the methods and attributes extends from parents classes, the override is considered *)
 let build_class_overload_descriptors t_ast class_descriptors =
@@ -102,6 +117,7 @@ let build_class_descriptors t_ast class_descriptors =
              c_parent = t_astcls.t_cparent;
              c_methods = create_methods_table t_astcls.t_cmethods;
              c_attributes = create_attr_table t_astcls.t_cattributes;
+             c_constructors = create_consts_table t_astcls.t_cconsts;
            }
            in Hashtbl.add class_descriptors cls_ref descriptor
          end
@@ -117,11 +133,13 @@ let build_basic_class_descriptors class_descriptors =
       c_parent = {tpath=[]; tid=""};
       c_methods = create_methods_table [];
       c_attributes = create_attr_table [];
+      c_constructors = create_consts_table [];
     };
     Type.integer_type, {
       c_parent = Type.object_type;
       c_methods = create_methods_table [];
       c_attributes = create_attr_table [];
+      c_constructors = create_consts_table [];
     };
   ] in
   List.iter

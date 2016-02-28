@@ -6,7 +6,6 @@ public class TestEval {
 
     // test TNew
     TestEval te = new TestEval();
-
     // test TCall & TReturn
     (new TestEval()).add(te.bar(), 122);
 
@@ -52,6 +51,7 @@ public class TestEval {
 
 
 class Node {
+
   public void foobar() {
   }
 }

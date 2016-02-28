@@ -79,4 +79,10 @@ I : class_env(parent=: Object)
 Integer : class_env(parent=: Object)
 Object : class_env(parent=: )
 String : class_env(parent=: Object)
-end typing
+450450end typing
+---------p c 
+456
+0---------p c 
+has constructor
+---------p c 
+---------p c
