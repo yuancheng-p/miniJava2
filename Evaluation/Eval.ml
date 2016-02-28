@@ -4,31 +4,9 @@ open AST
 open TAST
 open Compiling
 open EnvType
-
-
-exception No_Entry_Point
-exception NotImplemented of string
-exception Action_Not_Supported of string
-exception Fatal_Error of string
-
+open ResultPrinter
 
 let heap_size = ref 0
-
-type evaled_expr =
-  | EValue of t_value
-  | EName of string
-  | ERef of int
-  | EAttr of int * string (* ex: refer obj by obj_id, static is not considered *)
-  | EVoid
-  | ENull
-
-exception Return_Val of evaled_expr
-
-type obj = {
-  obj_t: Type.t;
-  obj_tbl: (string, evaled_expr) Hashtbl.t
-}
-
 
 
 let find_obj_in_heap heap obj_id =
@@ -57,51 +35,7 @@ let update_obj heap obj_id attr_name new_v =
   Hashtbl.replace obj.obj_tbl attr_name new_v
 
 
-let string_of_value v =
-  match v with
-  | EValue(TInt(i)) -> string_of_int i ^ " (int)"
-  | EValue(TFloat(f)) -> string_of_float f ^ " (float)"
-  | EValue(TChar(c)) ->
-     begin
-     match c with
-       | None -> "None (char)"
-       | Some v -> Char.escaped v ^ " (char)"
-     end
-  | EValue(TBoolean(b)) -> string_of_bool b ^ " (boolean)"
-  | EName (id) -> id
-  | EAttr (obj_id, name) -> "[" ^ string_of_int obj_id ^ "]." ^ name
-  | ERef (r) -> string_of_int r ^ " (ref)"
-  | ENull -> "null"
-  | EVoid -> "void"
-  | _ -> raise(NotImplemented("string_of_value"))
-
-
-let print_current_frame frame =
-  print_endline "------ current frame ------";
-  Env.iter
-  (
-    fun (id, v) -> print_endline (id ^ " : " ^string_of_value v);
-  ) frame
-
-
-let print_obj_tbl obj_tbl =
-  Hashtbl.iter
-  (
-    fun id v -> print_endline ("  " ^ id ^ " : " ^ string_of_value v);
-  ) obj_tbl
-
-
-let print_heap heap =
-  print_endline "=== heap ===";
-  Hashtbl.iter
-  (
-    fun ref_id obj ->
-      print_endline (
-        "[" ^ (Type.stringOf obj.obj_t) ^ "] "
-        ^ "(" ^ (string_of_int ref_id) ^ ") :"
-      );
-      print_obj_tbl obj.obj_tbl
-  ) heap
+let indent = ref false
 
 
 let rec eval_method ep heap frame class_descriptors =
@@ -119,13 +53,9 @@ and eval_stmt_list sl heap frame class_descriptors =
       match h with
       | TReturn(_) -> (* stop the eval *)
           let ret = eval_stmt h heap frame class_descriptors in
-          print_current_frame frame;
-          print_heap heap;
           raise (Return_Val(ret))
       | _ ->
           eval_stmt h heap frame class_descriptors;
-          print_current_frame frame;
-          print_heap heap;
           eval_stmt_list others heap frame class_descriptors
       end
 
@@ -139,7 +69,6 @@ and eval_stmt stmt heap frame cls_descs =
       begin
         let v1 = deep_eval e1 frame
         and v2 = deep_eval e2 frame in
-        print_endline ("v1, v2 : " ^ string_of_value v1 ^ " , " ^ string_of_value v2);
         let val_of_condition c = if c then EValue(TBoolean(true)) else EValue(TBoolean(false)) in
         match op with
         | Op_add | Op_sub | Op_mul | Op_div | Op_mod -> begin
@@ -152,8 +81,7 @@ and eval_stmt stmt heap frame cls_descs =
                 | Op_mul -> i1 * i2
                 | Op_div -> i1 / i2
                 | Op_mod -> i1 mod i2
-              in print_endline ((string_of_int i1) ^ (string_of_infix_op op) ^ (string_of_int i2) ^ "=" ^ (string_of_int i)) ;
-              EValue(TInt(i))
+              in EValue(TInt(i))
             | EValue(TFloat(f1)), EValue(TInt(i2)) ->
               let f =
                 match op with
@@ -161,8 +89,7 @@ and eval_stmt stmt heap frame cls_descs =
                 | Op_sub -> f1 -. float_of_int i2
                 | Op_mul -> f1 *. float_of_int i2
                 | Op_div -> f1 /. float_of_int i2
-              in print_endline ((string_of_float f1) ^ (string_of_infix_op op) ^ (string_of_int i2) ^ "=" ^ (string_of_float f)) ;
-              EValue(TFloat(f))
+              in EValue(TFloat(f))
             | EValue(TInt(i1)), EValue(TFloat(f2)) ->
               let f =
                 match op with
@@ -170,8 +97,7 @@ and eval_stmt stmt heap frame cls_descs =
                 | Op_sub -> float_of_int i1 -. f2
                 | Op_mul -> float_of_int i1 *. f2
                 | Op_div -> float_of_int i1 /. f2
-              in print_endline ((string_of_int i1) ^ (string_of_infix_op op)  ^ (string_of_float f2) ^ "=" ^ (string_of_float f)) ;
-              EValue(TFloat(f))
+              in EValue(TFloat(f))
             | EValue(TFloat(f1)), EValue(TFloat(f2)) ->
               let f =
                 match op with
@@ -179,8 +105,7 @@ and eval_stmt stmt heap frame cls_descs =
                 | Op_sub -> f1 -. f2
                 | Op_mul -> f1 *. f2
                 | Op_div -> f1 /. f2
-              in print_endline ((string_of_float f1) ^ (string_of_infix_op op) ^ (string_of_float f2) ^ "=" ^ (string_of_float f)) ;
-              EValue(TFloat(f))
+              in EValue(TFloat(f))
         end
         | Op_eq -> val_of_condition(v1 = v2)
         | Op_ne -> val_of_condition(v1 != v2)
@@ -201,7 +126,6 @@ and eval_stmt stmt heap frame cls_descs =
         match op with
         | Assign ->
             begin
-              print_endline ("+++Assign:" ^ (string_of_value v));
               let _ = match variable with
                 | EName (id) -> replace_in_frame_or_heap frame heap id v;
                 | EAttr (obj_id, id) ->
@@ -235,7 +159,6 @@ and eval_stmt stmt heap frame cls_descs =
         let n = eval_expression e
         and v = deep_eval e frame
         in begin
-          print_endline ("TPre");
           match n, v with
           | EName(name), EValue(TInt(i)) ->
             begin
@@ -260,9 +183,7 @@ and eval_stmt stmt heap frame cls_descs =
             end
         end
     | TName (id, t) -> EName(id)
-    | TNew (None, qname, el, Ref(rt)) ->
-        call_constructor qname el rt
-    | TNew (Some name, qname, el, Ref(rt)) ->
+    | TNew (_, qname, el, Ref(rt)) ->
         call_constructor qname el rt
     | TCall (Some e, mname, arg_list, t) ->
         let ref = deep_eval e frame in
@@ -345,10 +266,15 @@ and eval_stmt stmt heap frame cls_descs =
           let ref_id = !heap_size in
           Hashtbl.add heap ref_id {obj_t=Ref(rt);obj_tbl=obj_tbl};
           heap_size := !heap_size + 1;
-          print_endline ("######################### Call Constructor: " ^ cname);
+
+          indent := not(!indent);
+          print_endline ("    /*");
+          print_endline ("    ------ Call Constructor: " ^ cname ^ " ---------");
           eval_stmt_list the_method.t_cbody heap new_frame cls_descs;
-          print_endline ( "######################### Finished Call Constructor: "
-            ^ cname);
+          print_endline ("    ------ Finished Call Constructor ------------");
+          print_endline ("    */\n");
+          indent := not(!indent);
+
           ERef(ref_id)
           end
 
@@ -378,10 +304,13 @@ and eval_stmt stmt heap frame cls_descs =
         let the_method = Hashtbl.find cls_d.c_methods m_sig in
         let new_frame = get_new_frame frame ref the_method.t_margstype arg_list in
 
-        print_endline ("######################### Call: " ^ mname);
+        indent := not(!indent);
+        print_endline ("    /*");
+        print_endline ("    ------ Call method: " ^ mname ^ "() ---------");
         let ret = eval_method the_method heap new_frame cls_descs in
-        print_endline ( "######################### Finished Call: "
-          ^ mname ^ "; return:" ^ string_of_value ret);
+        print_endline ("    ------ Return: " ^ string_of_value ret ^ " ------------");
+        print_endline ("    */\n");
+        indent := not(!indent);
         ret
 
     and get_sig name arg_list =
@@ -462,14 +391,24 @@ and eval_stmt stmt heap frame cls_descs =
         begin
         match t with
         | Ref (rt) ->
+            print_endline ((Type.stringOf t) ^ " " ^ id ^ " = " ^ (string_of_expression e) ^ ";");
             let cls_d = Hashtbl.find cls_descs rt in
             let ref = deep_eval e frame in
-            Env.add frame id ref; ()
+            Env.add frame id ref;
+            print_endline ("    /*");
+            print_state_in_frame frame id;
+            print_state_in_heap heap ref;
+            print_endline ("    */\n");
+            ()
         | Primitive (pt) ->
             (* put the value directely into the current frame *)
             (* FIXME not support short and float type *)
+            print_endline ((Type.stringOf t) ^ " " ^ id ^ " = " ^ (string_of_expression e) ^ ";");
             let v = deep_eval e frame in
             Env.add frame id v;
+            print_endline ("    /*");
+            print_state_in_frame frame id;
+            print_endline ("    */\n");
             ()
         | Array (at, i) -> ();
         | _ -> ();
@@ -480,7 +419,13 @@ and eval_stmt stmt heap frame cls_descs =
   in match stmt with
   | TVarDecl vd_list ->
       List.iter (fun vd -> eval_var_decl vd ) vd_list; EVoid
-  | TExpr e -> eval_expression e; EVoid
+  | TExpr e ->
+       if !indent then
+         print_endline ("    " ^ (string_of_expression e) ^ ";")
+       else
+         print_endline ((string_of_expression e) ^ ";");
+         eval_expression e;
+       EVoid
   | TBlock(sl) ->
       let new_frame = Env.copy frame in
       eval_stmt_list sl heap new_frame cls_descs;
@@ -536,7 +481,7 @@ let print_entry_point ep =
   if ep.t_mname <> "main" then
     raise(No_Entry_Point);
 
-  print_endline ep.t_mname
+  print_endline ("_______________" ^ ep.t_mname ^ "___________________")
 
 
 let eval t_ast class_descriptors =
