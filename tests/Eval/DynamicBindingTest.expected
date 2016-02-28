@@ -1,0 +1,77 @@
+successfull parsing
+start typing
+check add and methods:DynamicBindingTest:main
+check add and methods:A:foo
+check add and methods:B:foo
+check add and methods:C:foo
+--------- env --------
+A : class_env(parent=: Object)
+method : foo
+B : class_env(parent=: A)
+method : foo
+Boolean : class_env(parent=: Object)
+C : class_env(parent=: A)
+method : foo
+DynamicBindingTest : class_env(parent=: Object)
+method : main paramlist: String[] 
+Integer : class_env(parent=: Object)
+Object : class_env(parent=: )
+String : class_env(parent=: Object)
+end typing
+main
+------ current frame ------
+b : 0 (ref)
+=== heap ===
+[B] (0) :
+######################### Call: foo
+------ current frame ------
+b : 0 (ref)
+this : 0 (ref)
+=== heap ===
+[B] (0) :
+######################### Finished Call: foo; return:200 (int)
+------ current frame ------
+b : 0 (ref)
+=== heap ===
+[B] (0) :
++++Assign:1 (ref)
+------ current frame ------
+b : 1 (ref)
+=== heap ===
+[B] (0) :
+[C] (1) :
+######################### Call: foo
+------ current frame ------
+b : 1 (ref)
+this : 1 (ref)
+=== heap ===
+[B] (0) :
+[C] (1) :
+######################### Finished Call: foo; return:300 (int)
+------ current frame ------
+b : 1 (ref)
+=== heap ===
+[B] (0) :
+[C] (1) :
++++Assign:2 (ref)
+------ current frame ------
+b : 2 (ref)
+=== heap ===
+[A] (2) :
+[B] (0) :
+[C] (1) :
+######################### Call: foo
+------ current frame ------
+b : 2 (ref)
+this : 2 (ref)
+=== heap ===
+[A] (2) :
+[B] (0) :
+[C] (1) :
+######################### Finished Call: foo; return:100 (int)
+------ current frame ------
+b : 2 (ref)
+=== heap ===
+[A] (2) :
+[B] (0) :
+[C] (1) :
