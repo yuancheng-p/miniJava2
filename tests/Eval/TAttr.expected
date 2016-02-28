@@ -1,0 +1,151 @@
+successfull parsing
+start typing
+check add and methods:Main:main
+check add and methods:Person:setAge
+check add and methods:Person:getAge
+--------- env --------
+Boolean : class_env(parent=: Object)
+Integer : class_env(parent=: Object)
+Main : class_env(parent=: Object)
+method : main
+Node : class_env(parent=: Object)
+ attr:  Node next;
+ attr:  int val;
+Object : class_env(parent=: )
+Person : class_env(parent=: Object)
+method : setAge paramlist: int 
+method : getAge
+ attr:  int age;
+String : class_env(parent=: Object)
+end typing
+main
+------ current frame ------
+p : 0 (ref)
+=== heap ===
+[Person] (0) :
+  age : 0 (int)
+######################### Call: setAge
++++Assign:12 (int)
+------ current frame ------
+a : 12 (int)
+p : 0 (ref)
+this : 0 (ref)
+=== heap ===
+[Person] (0) :
+  age : 12 (int)
+######################### Finished Call: setAge; return:void
+------ current frame ------
+p : 0 (ref)
+=== heap ===
+[Person] (0) :
+  age : 12 (int)
+######################### Call: getAge
+------ current frame ------
+p : 0 (ref)
+this : 0 (ref)
+=== heap ===
+[Person] (0) :
+  age : 12 (int)
+######################### Finished Call: getAge; return:12 (int)
+------ current frame ------
+a : 12 (int)
+p : 0 (ref)
+=== heap ===
+[Person] (0) :
+  age : 12 (int)
+------ current frame ------
+a : 12 (int)
+k : 1 (int)
+p : 0 (ref)
+=== heap ===
+[Person] (0) :
+  age : 12 (int)
+------ current frame ------
+a : 12 (int)
+k : 1 (int)
+p : 0 (ref)
+n1 : 1 (ref)
+=== heap ===
+[Person] (0) :
+  age : 12 (int)
+[Node] (1) :
+  val : 0 (int)
+  next : null
++++Assign:888 (int)
+------ current frame ------
+a : 12 (int)
+k : 1 (int)
+p : 0 (ref)
+n1 : 1 (ref)
+=== heap ===
+[Person] (0) :
+  age : 12 (int)
+[Node] (1) :
+  val : 888 (int)
+  next : null
++++Assign:2 (ref)
+------ current frame ------
+a : 12 (int)
+k : 1 (int)
+p : 0 (ref)
+n1 : 1 (ref)
+=== heap ===
+[Node] (2) :
+  val : 0 (int)
+  next : null
+[Person] (0) :
+  age : 12 (int)
+[Node] (1) :
+  val : 888 (int)
+  next : 2 (ref)
++++Assign:999 (int)
+------ current frame ------
+a : 12 (int)
+k : 1 (int)
+p : 0 (ref)
+n1 : 1 (ref)
+=== heap ===
+[Node] (2) :
+  val : 999 (int)
+  next : null
+[Person] (0) :
+  age : 12 (int)
+[Node] (1) :
+  val : 888 (int)
+  next : 2 (ref)
++++Assign:3 (ref)
+------ current frame ------
+a : 12 (int)
+k : 1 (int)
+p : 0 (ref)
+n1 : 1 (ref)
+=== heap ===
+[Node] (2) :
+  val : 999 (int)
+  next : 3 (ref)
+[Person] (0) :
+  age : 12 (int)
+[Node] (3) :
+  val : 0 (int)
+  next : null
+[Node] (1) :
+  val : 888 (int)
+  next : 2 (ref)
++++Assign:111 (int)
+------ current frame ------
+a : 12 (int)
+k : 1 (int)
+p : 0 (ref)
+n1 : 1 (ref)
+=== heap ===
+[Node] (2) :
+  val : 999 (int)
+  next : 3 (ref)
+[Person] (0) :
+  age : 12 (int)
+[Node] (3) :
+  val : 111 (int)
+  next : null
+[Node] (1) :
+  val : 888 (int)
+  next : 2 (ref)
