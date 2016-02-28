@@ -9,6 +9,7 @@ open EnvType
 exception No_Entry_Point
 exception NotImplemented of string
 exception Action_Not_Supported of string
+exception Fatal_Error of string
 
 
 let heap_size = ref 0
@@ -66,7 +67,10 @@ let print_heap heap =
   Hashtbl.iter
   (
     fun ref_id obj ->
-      print_endline ("[" ^ (string_of_int ref_id) ^ "] :");
+      print_endline (
+        "[" ^ (Type.stringOf obj.obj_t) ^ "] "
+        ^ "(" ^ (string_of_int ref_id) ^ ") :"
+      );
       print_obj_tbl obj.obj_tbl
   ) heap
 
@@ -279,10 +283,19 @@ and eval_stmt stmt heap frame cls_descs =
           args = (construct_arg_list_by_texpr_list arg_list [])
         } in
 
+        (* lookup the runtime type (dynamic binding) *)
         let rt =
           begin
-            match t with
-            | Ref(r) -> r
+            match ref with
+            | ERef(ref_id) ->
+                if (Hashtbl.mem heap ref_id) = false then
+                  raise (Fatal_Error( "object id '" ^ (string_of_int ref_id)
+                    ^ "' not found in the heap."));
+                let obj = Hashtbl.find heap ref_id in
+                begin
+                  match obj.obj_t with
+                  | Ref(r) -> r
+                end
             | _ -> raise(Action_Not_Supported("cannot call method of primitive type"))
           end in
 
@@ -413,7 +426,6 @@ let eval t_ast class_descriptors =
   let heap = Hashtbl.create 100
   in
   (* TODO: initilization of static instances *)
-  (* TODO: find entry point *)
   let ep = ref {
     t_mmodifiers = []; t_mname = ""; t_mreturntype = Void;
     t_margstype = []; t_mbody = []; t_mthrows = [];
