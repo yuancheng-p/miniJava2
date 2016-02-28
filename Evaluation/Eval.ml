@@ -18,6 +18,7 @@ type evaled_expr =
   | EValue of t_value
   | EName of string
   | ERef of int
+  | EAttr of int * string (* ex: refer obj by obj_id, static is not considered *)
   | EVoid
   | ENull
 
@@ -27,6 +28,32 @@ type obj = {
   obj_t: Type.t;
   obj_tbl: (string, evaled_expr) Hashtbl.t
 }
+
+
+let find_obj_in_heap heap obj_id =
+  if (Hashtbl.mem heap obj_id) = false then
+    raise (Fatal_Error( "object id '" ^ (string_of_int obj_id)
+      ^ "' not found in the heap."));
+  Hashtbl.find heap obj_id
+
+
+(* check if an attr exists in the the obj, return the obj if yes *)
+let check_obj_attr heap obj_id attr_name =
+  let obj = find_obj_in_heap heap obj_id in
+  if (Hashtbl.mem obj.obj_tbl attr_name) = false then
+    raise (Fatal_Error( "Attribute '" ^ (attr_name)
+      ^ "' not found in the obj '" ^ (string_of_int obj_id) ^ "''"));
+  obj
+
+
+let find_attribute_in_obj heap obj_id attr_name =
+  let obj = check_obj_attr heap obj_id attr_name in
+  Hashtbl.find obj.obj_tbl attr_name
+
+
+let update_obj heap obj_id attr_name new_v =
+  let obj = check_obj_attr heap obj_id attr_name in
+  Hashtbl.replace obj.obj_tbl attr_name new_v
 
 
 let string_of_value v =
@@ -41,6 +68,7 @@ let string_of_value v =
      end
   | EValue(TBoolean(b)) -> string_of_bool b ^ " (boolean)"
   | EName (id) -> id
+  | EAttr (obj_id, name) -> "[" ^ string_of_int obj_id ^ "]." ^ name
   | ERef (r) -> string_of_int r ^ " (ref)"
   | ENull -> "null"
   | EVoid -> "void"
@@ -172,10 +200,20 @@ and eval_stmt stmt heap frame cls_descs =
         and v = deep_eval e2 frame in
         match op with
         | Assign ->
-            print_endline ("+++Assign:" ^ (string_of_value v));
-            let id = string_of_value variable in
-            replace_in_frame_or_heap frame heap id v;
-            EVoid
+            begin
+              print_endline ("+++Assign:" ^ (string_of_value v));
+              let _ = match variable with
+                | EName (id) -> replace_in_frame_or_heap frame heap id v;
+                | EAttr (obj_id, id) ->
+                    begin
+                      match v with
+                      | EAttr(o_id, attr) ->
+                          let a = find_attribute_in_obj heap o_id attr in
+                          update_obj heap obj_id id a;
+                      | _ -> update_obj heap obj_id id v;
+                    end
+              in EVoid
+            end
       end
     | TPost (e, op, t) ->
         let n = eval_expression e
@@ -319,6 +357,23 @@ and eval_stmt stmt heap frame cls_descs =
         print_endline ( "######################### Finished Call: "
           ^ mname ^ "; return:" ^ string_of_value ret);
         ret
+
+    | TAttr (e, id, t) ->
+        (* we only suppose e as an object, not a class,
+         * static field is not considered.
+         * *)
+        let v = deep_eval e frame in
+        let obj_id = match v with
+          | ERef(id) -> id
+          | EAttr(o_id, id) -> (* recursive: find the next object *)
+              begin
+                let next_v = find_attribute_in_obj heap o_id id in
+                match next_v with
+                | ERef(id) -> id
+                | _ -> raise(Fatal_Error("unexpected type."))
+              end
+          | _ -> raise(Fatal_Error("unexpected type."))
+        in EAttr(obj_id, id)
 
     | _ -> raise(NotImplemented("eval_expression"))
 
