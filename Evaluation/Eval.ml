@@ -169,11 +169,12 @@ and eval_stmt stmt heap frame cls_descs =
     | TAssignExp(e1, op, e2, t) ->
       begin
         let variable = eval_expression e1
-        and v = eval_expression e2 in
+        and v = deep_eval e2 frame in
         match op with
         | Assign ->
             print_endline ("+++Assign:" ^ (string_of_value v));
-            Env.replace frame (string_of_value variable) v;
+            let id = string_of_value variable in
+            replace_in_frame_or_heap frame heap id v;
             EVoid
       end
     | TPost (e, op, t) ->
@@ -186,10 +187,10 @@ and eval_stmt stmt heap frame cls_descs =
               match op with
               | Incr ->
                 let new_v = EValue(TInt(i+1))
-                in Env.replace frame name new_v; v
+                in replace_in_frame_or_heap frame heap name new_v; v
               | Decr ->
                 let new_v = EValue(TInt(i-1))
-                in Env.replace frame name new_v; v
+                in replace_in_frame_or_heap frame heap name new_v; v
             end
         end
     | TPre (op, e, t) ->
@@ -204,10 +205,10 @@ and eval_stmt stmt heap frame cls_descs =
               | Op_neg -> EValue(TInt(-i))
               | Op_incr ->
                 let new_v = EValue(TInt(i+1))
-                in Env.replace frame name new_v; new_v
+                in replace_in_frame_or_heap frame heap name new_v; new_v
               | Op_decr ->
                 let new_v = EValue(TInt(i-1))
-                in Env.replace frame name new_v; new_v
+                in replace_in_frame_or_heap frame heap name new_v; new_v
             end
           | EName(name), EValue(TBoolean(b)) ->
             begin
@@ -330,6 +331,20 @@ and eval_stmt stmt heap frame cls_descs =
           Env.find frame n
       | _ -> ref
 
+    (* replace a varible, if it is a vrible in frame, update the frame,
+     * else if it is an attribute in the heap, update the heap*)
+    and replace_in_frame_or_heap frame heap id v =
+      if Env.mem frame id then
+        Env.replace frame id v
+      else
+        begin
+          let ref = Env.find frame "this" in
+          let refNum =
+          match ref with
+          | ERef(r) -> r in
+          let h = Hashtbl.find heap refNum in
+          Hashtbl.replace h id v
+        end;
 
   (* for understanding local variable initialization,
    * see: http://stackoverflow.com/questions/2187632/why-does-javac-complain-about-not-initialized-variable
