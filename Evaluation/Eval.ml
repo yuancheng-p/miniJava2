@@ -22,6 +22,11 @@ type evaled_expr =
 
 exception Return_Val of evaled_expr
 
+type obj = {
+  obj_t: Type.t;
+  obj_tbl: (string, evaled_expr) Hashtbl.t
+}
+
 
 let string_of_value v =
   match v with
@@ -60,9 +65,9 @@ let print_heap heap =
   print_endline "=== heap ===";
   Hashtbl.iter
   (
-    fun ref_id obj_tbl ->
+    fun ref_id obj ->
       print_endline ("[" ^ (string_of_int ref_id) ^ "] :");
-      print_obj_tbl obj_tbl
+      print_obj_tbl obj.obj_tbl
   ) heap
 
 
@@ -246,7 +251,7 @@ and eval_stmt stmt heap frame cls_descs =
         ) attrs;
 
         let ref_id = !heap_size in
-        Hashtbl.add heap ref_id obj_tbl;
+        Hashtbl.add heap ref_id {obj_t=Ref(rt);obj_tbl=obj_tbl};
         heap_size := !heap_size + 1;
         ERef(ref_id)
     | TCall (Some e, mname, arg_list, t) ->
