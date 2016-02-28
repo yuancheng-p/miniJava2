@@ -332,11 +332,11 @@ and eval_stmt stmt heap frame cls_descs =
             Env.find frame n
           else begin
             let ref = Env.find frame "this" in
-            let refNum =
+            let ref_id =
             match ref with
             | ERef(r) -> r in
-            let h = Hashtbl.find heap refNum in
-            Hashtbl.find h.obj_tbl n
+            let obj = Hashtbl.find heap ref_id in
+            Hashtbl.find obj.obj_tbl n
           end
       | _ -> ref
 
@@ -348,11 +348,11 @@ and eval_stmt stmt heap frame cls_descs =
       else
         begin
           let ref = Env.find frame "this" in
-          let refNum =
+          let ref_id =
           match ref with
           | ERef(r) -> r in
-          let h = Hashtbl.find heap refNum in
-          Hashtbl.replace h.obj_tbl id v
+          let obj = Hashtbl.find heap ref_id in
+          Hashtbl.replace obj.obj_tbl id v
         end;
 
   (* for understanding local variable initialization,
