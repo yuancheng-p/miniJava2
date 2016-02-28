@@ -52,17 +52,17 @@ new TestEval().add(122,te.bar());
     ------ Return: 1010 ------------
     */
 
-boolean b = true (boolean);
+boolean b = true;
     /*
     ------ b in frame ------
-    b : true (boolean)
+    b : true
     */
 
-b=false (boolean);
-boolean v2 = true (boolean);
+b=false;
+boolean v2 = true;
     /*
     ------ v2 in frame ------
-    v2 : true (boolean)
+    v2 : true
     */
 
 c=a+2;

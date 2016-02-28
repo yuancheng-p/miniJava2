@@ -31,9 +31,9 @@ let string_of_value v =
      begin
      match c with
        | None -> "None (char)"
-       | Some v -> Char.escaped v ^ " (char)"
+       | Some v -> Char.escaped v
      end
-  | EValue(TBoolean(b)) -> string_of_bool b ^ " (boolean)"
+  | EValue(TBoolean(b)) -> string_of_bool b
   | EName (id) -> id
   | EAttr (obj_id, name) -> "[" ^ string_of_int obj_id ^ "]." ^ name
   | ERef (r) -> string_of_int r ^ " (ref)"
