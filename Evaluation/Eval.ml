@@ -298,14 +298,43 @@ and eval_stmt stmt heap frame cls_descs =
         heap_size := !heap_size + 1;
         ERef(ref_id)
     | TCall (Some e, mname, arg_list, t) ->
+        let ref = deep_eval e frame in
+        call_method mname arg_list ref
+    | TCall (None, mname, arg_list, t) ->
+        (* static is not supported, so find the "this" object  *)
+        if Env.mem frame "this" = false then
+          raise(Action_Not_Supported(
+            "you might be calling a static method, but we cannot support that yet :("));
+
+        let ref = Env.find frame "this" in
+        call_method mname arg_list ref
+
+    | TAttr (e, id, t) ->
+        (* we only suppose e as an object, not a class,
+         * static field is not considered.
+         * *)
+        let v = deep_eval e frame in
+        let obj_id = match v with
+          | ERef(id) -> id
+          | EAttr(o_id, id) -> (* recursive: find the next object *)
+              begin
+                let next_v = find_attribute_in_obj heap o_id id in
+                match next_v with
+                | ERef(id) -> id
+                | _ -> raise(Fatal_Error("unexpected type."))
+              end
+          | _ -> raise(Fatal_Error("unexpected type."))
+        in EAttr(obj_id, id)
+
+    | _ -> raise(NotImplemented("eval_expression"))
+
+
+    and call_method mname arg_list ref =
         (* 1. copy the frame
          * 2. find method tast
          * 3. eval the tast, passing a new frame
          * *)
-        let ref = deep_eval e frame in
         let new_frame = Env.define frame "this" ref in
-        let t = Typing.type_of_typed_expr e in
-
         let rec construct_arg_list_by_texpr_list el result_list =
           match el with
           | [] -> List.rev result_list
@@ -357,25 +386,6 @@ and eval_stmt stmt heap frame cls_descs =
         print_endline ( "######################### Finished Call: "
           ^ mname ^ "; return:" ^ string_of_value ret);
         ret
-
-    | TAttr (e, id, t) ->
-        (* we only suppose e as an object, not a class,
-         * static field is not considered.
-         * *)
-        let v = deep_eval e frame in
-        let obj_id = match v with
-          | ERef(id) -> id
-          | EAttr(o_id, id) -> (* recursive: find the next object *)
-              begin
-                let next_v = find_attribute_in_obj heap o_id id in
-                match next_v with
-                | ERef(id) -> id
-                | _ -> raise(Fatal_Error("unexpected type."))
-              end
-          | _ -> raise(Fatal_Error("unexpected type."))
-        in EAttr(obj_id, id)
-
-    | _ -> raise(NotImplemented("eval_expression"))
 
     (* evaluate an expression, if the result is a reference,
      * then return the reference's value from the current frame *)
