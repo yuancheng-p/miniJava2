@@ -149,3 +149,21 @@ n1 : 1 (ref)
 [Node] (1) :
   val : 888 (int)
   next : 2 (ref)
++++Assign:[0].age
+------ current frame ------
+a : 12 (int)
+k : 1 (int)
+p : 0 (ref)
+n1 : 1 (ref)
+=== heap ===
+[Node] (2) :
+  val : 999 (int)
+  next : 3 (ref)
+[Person] (0) :
+  age : 12 (int)
+[Node] (3) :
+  val : 111 (int)
+  next : null
+[Node] (1) :
+  val : 12 (int)
+  next : 2 (ref)

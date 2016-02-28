@@ -11,6 +11,7 @@ public class Main {
     n1.next.val = 999;
     n1.next.next = new Node();
     n1.next.next.val = 111;
+    n1.val = p.age;
   }
 }
 
