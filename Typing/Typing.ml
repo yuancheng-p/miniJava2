@@ -33,6 +33,19 @@ let rec is_parent_of env r1 r2 =
     end
 
 
+(* find method in class_env include its parent, return method_env *)
+let rec find_method_by_sig env class_env method_signiture =
+  if Env.mem class_env.methods method_signiture then
+    let the_method = Env.find class_env.methods method_signiture in the_method
+  else
+    begin
+	    let p_ref_type = class_env.parent in
+	    match p_ref_type with
+	    | { tpath = [] ; tid = "Object" } | {tpath=[]; tid=""} -> raise(Method_Not_exist(method_signiture.name))
+	    | _ -> find_method_by_sig env (Env.find env p_ref_type) method_signiture
+    end
+
+
 let raise_type_mismatch t1 t2 =
   raise(Type_Mismatch(Type.stringOf t1^" and "^ Type.stringOf t2))
 
@@ -279,7 +292,7 @@ and type_e_attr env method_env e s =
   (* TODO check attrbute modifier private? *)
 
 (* find and check method call from this class or other class *)
-(* TODO need to support parent method *)
+(* support parent method *)
 and type_e_call env method_env eo s el =
   (* construct a argument list from expression list -> same as EnvType.t_arg -> *)
   (* use for find method by signiture in global_env *)
@@ -312,20 +325,16 @@ and type_e_call env method_env eo s el =
       | Ref(r) ->
         begin
           let class_env = Env.find env r in
-          if Env.mem class_env.methods method_signiture then
-            let the_method = Env.find class_env.methods method_signiture in
-            TCall(Some(typed_e1), s, typed_arg_list el [], the_method.return_type)
-            else raise(Method_Not_exist(s))
+          let the_method = find_method_by_sig env class_env method_signiture in
+          TCall(Some(typed_e1), s, typed_arg_list el [], the_method.return_type) 
         end
       | _ -> raise(NotImplemented("type_e_call"))
     end
    (* method call in same class, find method by name *)
   | None ->
     let class_env = Env.find env g_class_ref.contents in
-    if Env.mem class_env.methods method_signiture then
-      let the_method = Env.find class_env.methods method_signiture in
-      TCall(None, s, typed_arg_list el [], the_method.return_type)
-      else raise(Method_Not_exist(s))
+    let the_method = find_method_by_sig env class_env method_signiture in
+    TCall(None, s, typed_arg_list el [], the_method.return_type)
 
 
 (* the primitive type excepte boolean, the others can use post operation '++','--' *)
