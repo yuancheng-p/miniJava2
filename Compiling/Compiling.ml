@@ -44,6 +44,51 @@ let create_methods_table method_list =
   ) method_list; tb
 
 
+(* load the methods and attributes extends from parents classes, the override is considered *)
+let build_class_overload_descriptors t_ast class_descriptors =
+
+  (* create new descriptor loaded the method and attrs *)
+  let override_attrs_methods cls_ref class_descriptors new_descriptor =
+    let rec rec_overload_attrs_methods from_class_ref new_descriptor =
+      match from_class_ref with
+      | { tpath = [] ; tid = "Object" } -> new_descriptor
+      | _ -> begin
+        (* find parent_method *)
+        let from_descriptor = Hashtbl.find class_descriptors from_class_ref in
+        let from_attributes = from_descriptor.c_attributes in
+        let new_attributes = new_descriptor.c_attributes in
+        let from_methods = from_descriptor.c_methods in
+        let new_methods = new_descriptor.c_methods in
+        (* load methods from parent class *)
+        (* check each from_method if it is loverloade method or not, if not, put from_method into the new_descriptor *)
+        Hashtbl.iter ( fun from_msigniture from_mast ->
+          if Hashtbl.mem new_methods from_msigniture then ()
+          else
+            Hashtbl.add new_methods from_msigniture from_mast
+          ) from_methods;
+         (* load attributes from parent class *)
+        Hashtbl.iter ( fun from_attrname from_aast ->
+          if Hashtbl.mem new_attributes from_attrname then ()
+          else
+            Hashtbl.add new_attributes from_attrname from_aast
+          ) from_attributes;
+          rec_overload_attrs_methods from_descriptor.c_parent new_descriptor
+      end
+    in (* get the parent ref_type and do rec *)
+    rec_overload_attrs_methods (let decriptor = Hashtbl.find class_descriptors cls_ref in decriptor.c_parent) new_descriptor in
+
+  (* override descriptors : copy from class_descriptors *)
+  let override_descriptors = Hashtbl.copy class_descriptors in
+  Hashtbl.iter ( (* for each class descriptor *)
+    fun cls_ref descriptor ->
+      let new_descriptor = Hashtbl.find override_descriptors cls_ref in
+      match cls_ref with
+      | { tpath = [] ; tid = "Object" } -> ()
+      (* replace the override_descriptor by new_descriptor *)
+      | _ -> Hashtbl.replace override_descriptors cls_ref (override_attrs_methods cls_ref class_descriptors new_descriptor) 
+    ) class_descriptors; override_descriptors
+
+
 let build_class_descriptors t_ast class_descriptors =
   let type_list = t_ast.t_type_list
   in List.iter
@@ -86,10 +131,32 @@ let build_basic_class_descriptors class_descriptors =
   ) basic_descs
 
 
+let class_descriptors_printer class_descriptors =
+  print_endline "--------- class_descriptors --------";
+  Hashtbl.iter ( fun class_ref class_descriptor ->
+    print_endline ("class: "^class_ref.tid);
+   (* print attrs *)
+    let attrs = class_descriptor.c_attributes in
+    Hashtbl.iter (
+      fun aname aast ->
+        print_string "-a-->"; print_endline aname
+      ) attrs;
+    (* print methods *)
+    let methods = class_descriptor.c_methods in
+    Hashtbl.iter (
+      fun msigniture mast ->
+        print_string "-m-->";
+        GlobalEnv.print_method_signiture msigniture;print_endline ""
+      ) methods
+    ) class_descriptors
+
+
 let compile t_ast =
 
   (* ref_type: class_descriptor *)
   let class_descriptors = Hashtbl.create 10 in
   build_basic_class_descriptors class_descriptors;
   build_class_descriptors t_ast class_descriptors;
-  class_descriptors
+  let overload_descriptiors = build_class_overload_descriptors t_ast class_descriptors in
+ (* class_descriptors_printer overload_descriptiors; *)
+  overload_descriptiors
