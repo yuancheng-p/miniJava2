@@ -231,7 +231,7 @@ and type_new env method_env n t params=
   in let rec t_expression_desc_list exprs l =
     match exprs with
     | [] -> List.rev l
-    | h::others -> type_expression env method_env h::l
+    | h::others -> (type_expression env method_env h)::(t_expression_desc_list others l)
   in match (n, t, params) with
   | (None, qname, params)->
     check_qname_in_env qname;
@@ -528,21 +528,24 @@ let type_initial_list env init_list =
 
 
 (* constructors *)
-let type_astconsts_list env astconsts_list =
-  let l = [] in
-  List.iter
-  (fun a ->
-    l = List.append l
-    [{
-      t_cmodifiers = a.cmodifiers;
-      t_cname = a.cname;
-      t_cargstype = type_method_args_list env (Env.initial()) a.cargstype;
-      t_cthrows = a.cthrows;
-      t_cbody = type_statement_list env (Env.initial()) a.cbody true Void;
-    }]; ()
-  ) astconsts_list; l
+let rec type_astconsts_list env astconsts_list =
+  let typed_method c =
+    (* method_env with key: variable_name, value: variable_type
+     * it is used for local variable redifinition check.
+     * *)
+    let method_env = Env.initial() in
+    let argstype = type_method_args_list env method_env c.cargstype in
+    {
+      t_cmodifiers = c.cmodifiers;
+      t_cname = c.cname;
+      t_cargstype = argstype;
+      t_cbody = List.rev(type_statement_list env method_env (List.rev c.cbody) true Void);
+      t_cthrows = c.cthrows;
+    }
 
-
+  in match astconsts_list with
+     | [] -> []
+     | t::q -> (typed_method t)::(type_astconsts_list env q)
 
 let typing ast verbose =
   let env = GlobalEnv.build_global_env ast verbose
@@ -560,7 +563,7 @@ let typing ast verbose =
               t_cattributes = type_attribute_list env c.cattributes;
               t_cparent = c.cparent;
               t_cinits = type_initial_list env c.cinits;
-              t_cconsts = type_astconsts_list env c.cconsts;
+              t_cconsts = type_astconsts_list env (List.rev c.cconsts);
             })
       in {
         t_modifiers = asttype.modifiers;

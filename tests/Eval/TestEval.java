@@ -1,12 +1,10 @@
 public class TestEval {
-
   public static void main(String [] args) {
     double a = 1.2;
     double c = 1.2 + a;
 
     // test TNew
     TestEval te = new TestEval();
-
     // test TCall & TReturn
     (new TestEval()).add(te.bar(), 122);
 
@@ -52,6 +50,7 @@ public class TestEval {
 
 
 class Node {
+
   public void foobar() {
   }
 }
