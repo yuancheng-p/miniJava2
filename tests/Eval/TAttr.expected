@@ -26,7 +26,7 @@ p : 0 (ref)
   age : 0 (int)
 ######################### Call: setAge
 +++Assign:12 (int)
-0------ current frame ------
+------ current frame ------
 a : 12 (int)
 p : 0 (ref)
 this : 0 (ref)
@@ -72,7 +72,7 @@ n1 : 1 (ref)
   val : 0 (int)
   next : null
 +++Assign:888 (int)
-1------ current frame ------
+------ current frame ------
 a : 12 (int)
 k : 1 (int)
 p : 0 (ref)
@@ -84,7 +84,7 @@ n1 : 1 (ref)
   val : 888 (int)
   next : null
 +++Assign:2 (ref)
-1------ current frame ------
+------ current frame ------
 a : 12 (int)
 k : 1 (int)
 p : 0 (ref)
@@ -99,7 +99,7 @@ n1 : 1 (ref)
   val : 888 (int)
   next : 2 (ref)
 +++Assign:999 (int)
-2------ current frame ------
+------ current frame ------
 a : 12 (int)
 k : 1 (int)
 p : 0 (ref)
@@ -114,7 +114,7 @@ n1 : 1 (ref)
   val : 888 (int)
   next : 2 (ref)
 +++Assign:3 (ref)
-2------ current frame ------
+------ current frame ------
 a : 12 (int)
 k : 1 (int)
 p : 0 (ref)
@@ -132,7 +132,7 @@ n1 : 1 (ref)
   val : 888 (int)
   next : 2 (ref)
 +++Assign:111 (int)
-3------ current frame ------
+------ current frame ------
 a : 12 (int)
 k : 1 (int)
 p : 0 (ref)
