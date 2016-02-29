@@ -26,3 +26,72 @@ The Lexer/Parser is incomplete but should be ok for phase2. It contains two conf
 - a conflict between expression and declaration of variable in statements
 both could be solved at the price of a much more complex
 grammar... Here the behavior of choosing shift should be ok.
+
+
+===========
+
+# How minijavac works and what it supports
+
+Lexer and Parser turn your source code into AST,
+after that, minijavac runs your Java program in the following steps.
+
+1. Typing: we turn an AST into a TAST.
+
+  Meanwhile, we have done a lot of syntax check:
+
+  - Check if there is a circle of inheritance.
+  - Check if a class is redefined.
+  - For each class, we check if there is any redefined methods, redefined attributes.
+  - When declaring a variable, we check if it's redefined in that scope.
+  - In value assignment and infix operation, we check if the two values are compatible,
+  including primitive types and class types.
+  - And a lot more :), you can refer to the code for more detailed check that we have done.
+
+  (ps: we have built a class table called "GlobleEnv" to help us get the check done.)
+
+
+2. Compiling: based on the TAST, we build the class descriptors.
+
+  - Each class descriptor contains an attribute table and a method table.
+  - If a class inherits from another class, then it also recursively inherits or
+  override it's ancestors' attributes and methods.
+
+  We also load some predefined classes: Object, Integer, etc.
+  However, we cannot support the methods of these classes yet.
+
+
+3. Evaluation: we run the program using the TAST and the class descriptors.
+
+  We maintain a stack for storing the variables, and a heap for allocating objects.
+  The evaluation starts with a single entry point: the main method.
+
+  At runtime, we support basic stuff in Java:
+  - Expressions calculation: +, -, *, /, %, &&, ||, !, ==, !=, >, <, >=, <=  etc.
+  - Logic control: if else, while. ("for" loop is not yet supported, but it can be replaced by while loop)
+  - Local variable declaration, the scope of variables is also well considered.
+  - Object initialization.
+    We initialize objects' attributes with a default value.
+    Then we call the constructors to initialize the attributes using parameters.
+  - Method call, passing parameters, returning values.
+  - Polymorphism (calling methods with different numbers or types of parameters will invoke different methods).
+  - Dynamic binding (we support runtime type).
+  - Class inheritance.
+
+
+Lastly, here are something not supported yet:
+
+  - package
+  - static methods, and static fields
+  - array
+  - private, public check.
+  - for statement
+  - predefined classes
+  - exceptions
+
+
+Please refer to the tests/ for some test cases.
+To see the test of evaluation, see tests/Eval/.
+
+For running the tests:
+
+  $> python run_test.py

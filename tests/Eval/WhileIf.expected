@@ -1,0 +1,47 @@
+successfull parsing
+start typing
+check add and methods:WhileIf:main
+--------- env --------
+Boolean : class_env(parent=: Object)
+Integer : class_env(parent=: Object)
+Object : class_env(parent=: )
+String : class_env(parent=: Object)
+WhileIf : class_env(parent=: Object)
+method : main paramlist: String[] 
+end typing
+_______________main___________________
+int sum = 1;
+    /*
+    ------ sum in frame ------
+    sum : 1
+    */
+
+int i = 1;
+    /*
+    ------ i in frame ------
+    i : 1
+    */
+
+sum=sum*i++;
+sum=sum*i++;
+sum=sum*i++;
+sum=sum*i++;
+sum=sum*i++;
+sum=sum*i++;
+sum=sum*i++;
+sum=sum*i++;
+sum=sum*i++;
+sum=sum*i++;
+int result = 0;
+    /*
+    ------ result in frame ------
+    result : 0
+    */
+
+result=sum;
+int r = result;
+    /*
+    ------ r in frame ------
+    r : 3628800
+    */
+
