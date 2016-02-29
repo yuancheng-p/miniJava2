@@ -7,7 +7,6 @@ open EnvType
 (* global viriable definition *)
 let g_class_ref = ref {tpath=[]; tid=""};;
 
-(* TODO: separate exceptions into a file, handle the error *)
 exception Null_Not_Allowed of string
 exception Action_Not_Supported of string
 exception NotImplemented of string
@@ -98,7 +97,6 @@ let check_assignment_type env t1 t2 =
         | _ -> raise_type_mismatch t1 t2
         end
       end
-    (* TODO: boxing and unboxing *)
     | _, _ -> raise_type_mismatch t1 t2
 
 
@@ -211,7 +209,6 @@ and type_op env method_env e1 e2 op =
     | _, _ -> raise(NotImplemented("type_op"))
 
 
-
 and type_expression env method_env e =
   {
     t_edesc = type_expression_desc env method_env e.edesc;
@@ -243,6 +240,7 @@ and type_new env method_env n t params=
     TNew(Some name, qname, t_expression_desc_list params [],
          Ref({tpath=[]; tid=List.hd (List.rev qname)}))
 
+
 (* Find type of a variable or field
  *
  * 1. When this function is used for finding variables in method,
@@ -271,7 +269,6 @@ and type_of_name env method_env class_ref id =
     end
 
 
-
 and type_assign_exp env method_env e1 assign_op e2 =
   let typed_e1 = type_expression env method_env e1
   and typed_e2 = type_expression env method_env e2
@@ -290,6 +287,7 @@ and type_e_attr env method_env e s =
   | Primitive(p) -> TAttr(typed_e1, s, Primitive(p))
   | _ -> raise(NotImplemented("type_e_attr"))
   (* TODO check attrbute modifier private? *)
+
 
 (* find and check method call from this class or other class *)
 (* support parent method *)
@@ -350,6 +348,7 @@ and type_e_post env method_env e postop =
     end
   | _ -> raise(Type_Mismatch(Type.stringOf t1 ^" can not convert to int"))
 
+
 (* boolean can just support '!', double, float can not support ~ *)
 and type_e_pre env method_env preop e =
   let typed_e1 = type_expression env method_env e in
@@ -375,6 +374,7 @@ let check_type_ref_in_env t id env =
     if Env.mem env ref_t = false then
       raise(UnknownType(stringOf_ref ref_t^"->"^id))
   | _ -> () (* TODO Array Type.t.Ref*)
+
 
 let rec type_var_decl_list env method_env vd_list =
   (* check if a local variable already existes in method_env including method arguments*)
@@ -559,7 +559,7 @@ let typing ast verbose =
         match t.info with
         | Class c ->
             TClass({
-              t_cmethods = type_method_list env (List.rev c.cmethods); (* FIXME *)
+              t_cmethods = type_method_list env (List.rev c.cmethods);
               t_cattributes = type_attribute_list env c.cattributes;
               t_cparent = c.cparent;
               t_cinits = type_initial_list env c.cinits;
@@ -577,6 +577,5 @@ let typing ast verbose =
 
   in {
     t_package = ast.package;
-    (* FIXME: the type list is parsed inversely during the recursion. *)
     t_type_list = type_type_list (List.rev ast.type_list)
   }

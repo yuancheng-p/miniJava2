@@ -12,8 +12,7 @@ let execute lexbuf verbose =
     print_endline "end typing";
 
     let class_descriptors = Compiling.compile t_ast
-    in let eval_results = Eval.eval t_ast class_descriptors
-    in ();
+    in Eval.eval t_ast class_descriptors
 
   with
     | Error ->

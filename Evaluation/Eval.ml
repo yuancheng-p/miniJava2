@@ -485,10 +485,8 @@ let print_entry_point ep =
 
 
 let eval t_ast class_descriptors =
-  (* TODO: return a list of evaluated results *)
   let heap = Hashtbl.create 100
   in
-  (* TODO: initilization of static instances *)
   let ep = ref {
     t_mmodifiers = []; t_mname = ""; t_mreturntype = Void;
     t_margstype = []; t_mbody = []; t_mthrows = [];
@@ -498,4 +496,4 @@ let eval t_ast class_descriptors =
 
   let frame = Env.initial();
   in eval_method !ep heap frame class_descriptors;
-  ();
+  ()
