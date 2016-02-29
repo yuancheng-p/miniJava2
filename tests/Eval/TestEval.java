@@ -1,5 +1,4 @@
 public class TestEval {
-
   public static void main(String [] args) {
     double a = 1.2;
     double c = 1.2 + a;

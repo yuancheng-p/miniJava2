@@ -30,6 +30,7 @@ type obj = {
 }
 
 
+
 let find_obj_in_heap heap obj_id =
   if (Hashtbl.mem heap obj_id) = false then
     raise (Fatal_Error( "object id '" ^ (string_of_int obj_id)
@@ -260,6 +261,41 @@ and eval_stmt stmt heap frame cls_descs =
         end
     | TName (id, t) -> EName(id)
     | TNew (None, qname, el, Ref(rt)) ->
+        call_constructor qname el rt
+    | TNew (Some name, qname, el, Ref(rt)) ->
+        call_constructor qname el rt
+    | TCall (Some e, mname, arg_list, t) ->
+        let ref = deep_eval e frame in
+        call_method mname frame arg_list ref
+    | TCall (None, mname, arg_list, t) ->
+        (* static is not supported, so find the "this" object  *)
+        if Env.mem frame "this" = false then
+          raise(Action_Not_Supported(
+            "you might be calling a static method, but we cannot support that yet :("));
+
+        let ref = Env.find frame "this" in
+        call_method mname frame arg_list ref
+
+    | TAttr (e, id, t) ->
+        (* we only suppose e as an object, not a class,
+         * static field is not considered.
+         * *)
+        let v = deep_eval e frame in
+        let obj_id = match v with
+          | ERef(id) -> id
+          | EAttr(o_id, id) -> (* recursive: find the next object *)
+              begin
+                let next_v = find_attribute_in_obj heap o_id id in
+                match next_v with
+                | ERef(id) -> id
+                | _ -> raise(Fatal_Error("unexpected type."))
+              end
+          | _ -> raise(Fatal_Error("unexpected type."))
+        in EAttr(obj_id, id)
+
+    | _ -> raise(NotImplemented("eval_expression"))
+
+    and call_constructor qname el rt =
         let cls_d = Hashtbl.find cls_descs rt in
         let attrs = cls_d.c_attributes in
         let obj_tbl = Hashtbl.create (Hashtbl.length attrs) in
@@ -291,98 +327,36 @@ and eval_stmt stmt heap frame cls_descs =
                     Hashtbl.add obj_tbl k ENull
               end
         ) attrs;
+        if Hashtbl.length cls_d.c_constructors = 0 then
+          begin
+          let ref_id = !heap_size in
+          Hashtbl.add heap ref_id {obj_t=Ref(rt);obj_tbl=obj_tbl};
+          heap_size := !heap_size + 1;
+          ERef(ref_id)
+          end
+        else
+          begin
+          let ref_id = !heap_size in
+          let cname = List.nth qname ((List.length qname)-1) in
+          let m_sig = get_sig cname el in
+          let the_method = Hashtbl.find cls_d.c_constructors m_sig in
+          let new_frame = get_new_frame frame (ERef(ref_id)) the_method.t_cargstype el in
 
-        let ref_id = !heap_size in
-        let new_frame = Env.define frame "this" (ERef(ref_id)) in
-        let rec construct_arg_list_by_texpr_list el result_list =
-          match el with
-          | [] -> List.rev result_list
-          | h::q ->
-            begin
-              let targ = Typing.type_of_typed_expr h in
-              construct_arg_list_by_texpr_list q
-                  (List.append result_list [{tvararg = false;tptype = targ}])
-            end
-        in
-        let cname = List.nth qname ((List.length qname)-1) in
-        let m_sig = {
-          name = cname;
-          args = construct_arg_list_by_texpr_list el []
-        } in
-        let the_method = Hashtbl.find cls_d.c_constructors m_sig in
-        (* Prepare the arguments for the new_frame,
-         * We don't support vararg for the moment!
-         * Therefore, the two lists have the same length.
-         * *)
-        List.map2
-        (
-          fun a e ->
-            let v = eval_expression e in
-            Env.add new_frame a.t_pident v;
-        ) the_method.t_cargstype el;
+          let ref_id = !heap_size in
+          Hashtbl.add heap ref_id {obj_t=Ref(rt);obj_tbl=obj_tbl};
+          heap_size := !heap_size + 1;
+          print_endline ("######################### Call Constructor: " ^ cname);
+          eval_stmt_list the_method.t_cbody heap new_frame cls_descs;
+          print_endline ( "######################### Finished Call Constructor: "
+            ^ cname);
+          ERef(ref_id)
+          end
 
-        print_endline ("######################### Call Constructor: " ^ cname);
-        eval_stmt_list the_method.t_cbody heap new_frame cls_descs;
-        print_endline ( "######################### Finished Call Constructor: "
-          ^ cname);
-
-        let ref_id = !heap_size in
-        Hashtbl.add heap ref_id {obj_t=Ref(rt);obj_tbl=obj_tbl};
-        heap_size := !heap_size + 1;
-        ERef(ref_id)
-    | TCall (Some e, mname, arg_list, t) ->
-        let ref = deep_eval e frame in
-        call_method mname arg_list ref
-    | TCall (None, mname, arg_list, t) ->
-        (* static is not supported, so find the "this" object  *)
-        if Env.mem frame "this" = false then
-          raise(Action_Not_Supported(
-            "you might be calling a static method, but we cannot support that yet :("));
-
-        let ref = Env.find frame "this" in
-        call_method mname arg_list ref
-
-    | TAttr (e, id, t) ->
-        (* we only suppose e as an object, not a class,
-         * static field is not considered.
-         * *)
-        let v = deep_eval e frame in
-        let obj_id = match v with
-          | ERef(id) -> id
-          | EAttr(o_id, id) -> (* recursive: find the next object *)
-              begin
-                let next_v = find_attribute_in_obj heap o_id id in
-                match next_v with
-                | ERef(id) -> id
-                | _ -> raise(Fatal_Error("unexpected type."))
-              end
-          | _ -> raise(Fatal_Error("unexpected type."))
-        in EAttr(obj_id, id)
-
-    | _ -> raise(NotImplemented("eval_expression"))
-
-
-    and call_method mname arg_list ref =
+    and call_method mname frame arg_list ref =
         (* 1. copy the frame
          * 2. find method tast
          * 3. eval the tast, passing a new frame
          * *)
-        let new_frame = Env.define frame "this" ref in
-        let rec construct_arg_list_by_texpr_list el result_list =
-          match el with
-          | [] -> List.rev result_list
-          | h::q ->
-            begin
-              let targ = Typing.type_of_typed_expr h in
-              construct_arg_list_by_texpr_list q
-                  (List.append result_list [{tvararg = false;tptype = targ}])
-            end
-        in
-
-        let m_sig = {
-          name = mname;
-          args = (construct_arg_list_by_texpr_list arg_list [])
-        } in
 
         (* lookup the runtime type (dynamic binding) *)
         let rt =
@@ -399,26 +373,48 @@ and eval_stmt stmt heap frame cls_descs =
                 end
             | _ -> raise(Action_Not_Supported("cannot call method of primitive type"))
           end in
-
         let cls_d = Hashtbl.find cls_descs rt in
+        let m_sig = get_sig mname arg_list in
         let the_method = Hashtbl.find cls_d.c_methods m_sig in
-
-        (* Prepare the arguments for the new_frame,
-         * We don't support vararg for the moment!
-         * Therefore, the two lists have the same length.
-         * *)
-        List.map2
-        (
-          fun a e ->
-            let v = eval_expression e in
-            Env.add new_frame a.t_pident v;
-        ) the_method.t_margstype arg_list;
+        let new_frame = get_new_frame frame ref the_method.t_margstype arg_list in
 
         print_endline ("######################### Call: " ^ mname);
         let ret = eval_method the_method heap new_frame cls_descs in
         print_endline ( "######################### Finished Call: "
           ^ mname ^ "; return:" ^ string_of_value ret);
         ret
+
+    and get_sig name arg_list =
+        let rec construct_arg_list_by_texpr_list el result_list =
+          match el with
+          | [] -> List.rev result_list
+          | h::q ->
+            begin
+              let targ = Typing.type_of_typed_expr h in
+              construct_arg_list_by_texpr_list q
+                  (List.append result_list [{tvararg = false;tptype = targ}])
+            end
+        in
+
+        let m_sig = {
+          name = name;
+          args = (construct_arg_list_by_texpr_list arg_list [])
+        } in
+        m_sig
+
+     and get_new_frame frame ref t_argstype arg_list =
+       let new_frame = Env.define frame "this" ref in
+       (* Prepare the arguments for the new_frame,
+           * We don't support vararg for the moment!
+           * Therefore, the two lists have the same length.
+           * *)
+        List.map2
+          (
+            fun a e ->
+              let v = eval_expression e in
+              Env.add new_frame a.t_pident v;
+          ) t_argstype arg_list;
+        new_frame
 
     (* evaluate an expression, if the result is a reference,
      * then return the reference's value from the current frame *)
