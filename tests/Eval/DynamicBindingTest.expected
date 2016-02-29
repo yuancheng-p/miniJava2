@@ -18,60 +18,32 @@ Integer : class_env(parent=: Object)
 Object : class_env(parent=: )
 String : class_env(parent=: Object)
 end typing
-main
------- current frame ------
-b : 0 (ref)
-=== heap ===
-[B] (0) :
-######################### Call: foo
------- current frame ------
-b : 0 (ref)
-this : 0 (ref)
-=== heap ===
-[B] (0) :
-######################### Finished Call: foo; return:200 (int)
------- current frame ------
-b : 0 (ref)
-=== heap ===
-[B] (0) :
-+++Assign:1 (ref)
------- current frame ------
-b : 1 (ref)
-=== heap ===
-[B] (0) :
-[C] (1) :
-######################### Call: foo
------- current frame ------
-b : 1 (ref)
-this : 1 (ref)
-=== heap ===
-[B] (0) :
-[C] (1) :
-######################### Finished Call: foo; return:300 (int)
------- current frame ------
-b : 1 (ref)
-=== heap ===
-[B] (0) :
-[C] (1) :
-+++Assign:2 (ref)
------- current frame ------
-b : 2 (ref)
-=== heap ===
-[A] (2) :
-[B] (0) :
-[C] (1) :
-######################### Call: foo
------- current frame ------
-b : 2 (ref)
-this : 2 (ref)
-=== heap ===
-[A] (2) :
-[B] (0) :
-[C] (1) :
-######################### Finished Call: foo; return:100 (int)
------- current frame ------
-b : 2 (ref)
-=== heap ===
-[A] (2) :
-[B] (0) :
-[C] (1) :
+_______________main___________________
+A b = new B();
+    /*
+    ------ b in frame ------
+    b : 0 (ref)
+    ------ object in heap ------
+    [B] (0) :
+    */
+
+b.foo();
+    /*
+    ------ Call method: foo() ---------
+    ------ Return: 200 ------------
+    */
+
+b=new C();
+b.foo();
+    /*
+    ------ Call method: foo() ---------
+    ------ Return: 300 ------------
+    */
+
+b=new A();
+b.foo();
+    /*
+    ------ Call method: foo() ---------
+    ------ Return: 100 ------------
+    */
+

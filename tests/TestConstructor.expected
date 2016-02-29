@@ -6,10 +6,9 @@ public class A extends Object {
   A(int j,int k,int p) {
     a1=j;
     b1=k;
-    int i 999;
   }
   void main(String[] args)  {
-    A a toto9.new A(4,5,9);
+    A a new A(4,5,9);
   }
 }
 
@@ -25,42 +24,21 @@ Integer : class_env(parent=: Object)
 Object : class_env(parent=: )
 String : class_env(parent=: Object)
 end typing
-main
-######################### Call Constructor: A
-+++Assign:4 (int)
------- current frame ------
-k : 5 (int)
-p : 9 (int)
-j : 4 (int)
-this : 0 (ref)
-=== heap ===
-[A] (0) :
-  b1 : 2 (int)
-  a1 : 4 (int)
-+++Assign:5 (int)
------- current frame ------
-k : 5 (int)
-p : 9 (int)
-j : 4 (int)
-this : 0 (ref)
-=== heap ===
-[A] (0) :
-  b1 : 5 (int)
-  a1 : 4 (int)
------- current frame ------
-k : 5 (int)
-p : 9 (int)
-j : 4 (int)
-this : 0 (ref)
-i : 999 (int)
-=== heap ===
-[A] (0) :
-  b1 : 5 (int)
-  a1 : 4 (int)
-######################### Finished Call Constructor: A
------- current frame ------
-a : 0 (ref)
-=== heap ===
-[A] (0) :
-  b1 : 5 (int)
-  a1 : 4 (int)
+_______________main___________________
+A a = new A(4,5,9);
+    /*
+    ------ Call Constructor: A ---------
+    a1=j;
+    b1=k;
+    ------ Finished Call Constructor ------------
+    */
+
+    /*
+    ------ a in frame ------
+    a : 0 (ref)
+    ------ object in heap ------
+    [A] (0) :
+      b1 : 5
+      a1 : 4
+    */
+

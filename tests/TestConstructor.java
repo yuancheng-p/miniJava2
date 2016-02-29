@@ -7,10 +7,9 @@ public class A {
     public A(int j,int k, int p){
       a1 = j;
       b1 = k;
-      int i = 999;
     }
     public static void main(String [] args) {
-      A a = toto9.new A(4,5,9);
+      A a = new A(4,5,9);
     }
 
 }

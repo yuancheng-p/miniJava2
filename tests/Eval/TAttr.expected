@@ -18,152 +18,53 @@ method : getAge
  attr:  int age;
 String : class_env(parent=: Object)
 end typing
-main
------- current frame ------
-p : 0 (ref)
-=== heap ===
-[Person] (0) :
-  age : 0 (int)
-######################### Call: setAge
-+++Assign:12 (int)
------- current frame ------
-a : 12 (int)
-p : 0 (ref)
-this : 0 (ref)
-=== heap ===
-[Person] (0) :
-  age : 12 (int)
-######################### Finished Call: setAge; return:void
------- current frame ------
-p : 0 (ref)
-=== heap ===
-[Person] (0) :
-  age : 12 (int)
-######################### Call: getAge
------- current frame ------
-p : 0 (ref)
-this : 0 (ref)
-=== heap ===
-[Person] (0) :
-  age : 12 (int)
-######################### Finished Call: getAge; return:12 (int)
------- current frame ------
-a : 12 (int)
-p : 0 (ref)
-=== heap ===
-[Person] (0) :
-  age : 12 (int)
------- current frame ------
-a : 12 (int)
-k : 1 (int)
-p : 0 (ref)
-=== heap ===
-[Person] (0) :
-  age : 12 (int)
------- current frame ------
-a : 12 (int)
-k : 1 (int)
-p : 0 (ref)
-n1 : 1 (ref)
-=== heap ===
-[Person] (0) :
-  age : 12 (int)
-[Node] (1) :
-  val : 0 (int)
-  next : null
-+++Assign:888 (int)
------- current frame ------
-a : 12 (int)
-k : 1 (int)
-p : 0 (ref)
-n1 : 1 (ref)
-=== heap ===
-[Person] (0) :
-  age : 12 (int)
-[Node] (1) :
-  val : 888 (int)
-  next : null
-+++Assign:2 (ref)
------- current frame ------
-a : 12 (int)
-k : 1 (int)
-p : 0 (ref)
-n1 : 1 (ref)
-=== heap ===
-[Node] (2) :
-  val : 0 (int)
-  next : null
-[Person] (0) :
-  age : 12 (int)
-[Node] (1) :
-  val : 888 (int)
-  next : 2 (ref)
-+++Assign:999 (int)
------- current frame ------
-a : 12 (int)
-k : 1 (int)
-p : 0 (ref)
-n1 : 1 (ref)
-=== heap ===
-[Node] (2) :
-  val : 999 (int)
-  next : null
-[Person] (0) :
-  age : 12 (int)
-[Node] (1) :
-  val : 888 (int)
-  next : 2 (ref)
-+++Assign:3 (ref)
------- current frame ------
-a : 12 (int)
-k : 1 (int)
-p : 0 (ref)
-n1 : 1 (ref)
-=== heap ===
-[Node] (2) :
-  val : 999 (int)
-  next : 3 (ref)
-[Person] (0) :
-  age : 12 (int)
-[Node] (3) :
-  val : 0 (int)
-  next : null
-[Node] (1) :
-  val : 888 (int)
-  next : 2 (ref)
-+++Assign:111 (int)
------- current frame ------
-a : 12 (int)
-k : 1 (int)
-p : 0 (ref)
-n1 : 1 (ref)
-=== heap ===
-[Node] (2) :
-  val : 999 (int)
-  next : 3 (ref)
-[Person] (0) :
-  age : 12 (int)
-[Node] (3) :
-  val : 111 (int)
-  next : null
-[Node] (1) :
-  val : 888 (int)
-  next : 2 (ref)
-+++Assign:[0].age
------- current frame ------
-a : 12 (int)
-k : 1 (int)
-p : 0 (ref)
-n1 : 1 (ref)
-=== heap ===
-[Node] (2) :
-  val : 999 (int)
-  next : 3 (ref)
-[Person] (0) :
-  age : 12 (int)
-[Node] (3) :
-  val : 111 (int)
-  next : null
-[Node] (1) :
-  val : 12 (int)
-  next : 2 (ref)
+_______________main___________________
+Person p = new Person();
+    /*
+    ------ p in frame ------
+    p : 0 (ref)
+    ------ object in heap ------
+    [Person] (0) :
+      age : 0
+    */
+
+p.setAge(12);
+    /*
+    ------ Call method: setAge() ---------
+    this.age=a;
+    ------ Return: void ------------
+    */
+
+int a = p.getAge();
+    /*
+    ------ Call method: getAge() ---------
+    ------ Return: 12 ------------
+    */
+
+    /*
+    ------ a in frame ------
+    a : 12
+    */
+
+int k = 1;
+    /*
+    ------ k in frame ------
+    k : 1
+    */
+
+Node n1 = new Node();
+    /*
+    ------ n1 in frame ------
+    n1 : 1 (ref)
+    ------ object in heap ------
+    [Node] (1) :
+      val : 0
+      next : null
+    */
+
+n1.val=888;
+n1.next=new Node();
+n1.next.val=999;
+n1.next.next=new Node();
+n1.next.next.val=111;
+n1.val=p.age;
