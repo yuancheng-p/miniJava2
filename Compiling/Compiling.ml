@@ -21,7 +21,6 @@ let rec mk_t_t_args t_arguments l =
 
 let create_attr_table  attr_list =
   let tb = Hashtbl.create 30;
-  (* TODO: override parent's attributes *)
   in List.iter (* foreach t_astattribute *)
   (
     fun a ->
@@ -44,6 +43,7 @@ let create_methods_table method_list =
       Hashtbl.add tb m_sig m
   ) method_list; tb
 
+
 let create_consts_table constructor_list =
   (* return a hash table with
    * methods signature as key, method t_ast as value
@@ -58,6 +58,7 @@ let create_consts_table constructor_list =
       } in
       Hashtbl.add tb m_sig m
   ) constructor_list; tb
+
 
 (* load the methods and attributes extends from parents classes, the override is considered *)
 let build_class_overload_descriptors t_ast class_descriptors =
@@ -75,7 +76,7 @@ let build_class_overload_descriptors t_ast class_descriptors =
         let from_methods = from_descriptor.c_methods in
         let new_methods = new_descriptor.c_methods in
         (* load methods from parent class *)
-        (* check each from_method if it is loverloade method or not, if not, put from_method into the new_descriptor *)
+        (* check each from_method if it is overloaded method, if not, put from_method into the new_descriptor *)
         Hashtbl.iter ( fun from_msigniture from_mast ->
           if Hashtbl.mem new_methods from_msigniture then ()
           else

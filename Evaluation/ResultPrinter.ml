@@ -16,12 +16,15 @@ type evaled_expr =
   | EVoid
   | ENull
 
+
 exception Return_Val of evaled_expr
+
 
 type obj = {
   obj_t: Type.t;
   obj_tbl: (string, evaled_expr) Hashtbl.t
 }
+
 
 let string_of_value v =
   match v with
@@ -41,6 +44,7 @@ let string_of_value v =
   | EVoid -> "void"
   | _ -> raise(NotImplemented("string_of_value"))
 
+
 let print_current_frame frame =
   print_endline "------ current frame ------";
   Env.iter
@@ -48,10 +52,12 @@ let print_current_frame frame =
     fun (id, v) -> print_endline (id ^ " : " ^string_of_value v);
   ) frame
 
+
 let print_state_in_frame frame id=
   print_endline ("    ------ " ^ id ^ " in frame ------");
   let v = Env.find frame id in
   print_endline ("    " ^ id ^ " : " ^ string_of_value v)
+
 
 let print_obj_tbl obj_tbl =
   Hashtbl.iter
@@ -71,6 +77,7 @@ let print_state_in_heap heap ref=
         ^ "(" ^ (string_of_int ref_id) ^ ") :");
       print_obj_tbl obj.obj_tbl
 
+
 let print_heap heap ref=
   print_endline "=== heap ===";
   Hashtbl.iter
@@ -82,6 +89,7 @@ let print_heap heap ref=
       );
       print_obj_tbl obj.obj_tbl
   ) heap
+
 
 let rec string_of_expression_desc = function
   | TNew(_,n,al,t) ->
@@ -109,6 +117,7 @@ let rec string_of_expression_desc = function
   | TPost(e,Decr,t) -> (string_of_expression e)^"--"
   | TPre(op,e,t) -> (string_of_prefix_op op)^(string_of_expression e)
   | TType t -> Type.stringOf t
+
 
 and string_of_expression e =
   let s = string_of_expression_desc e.t_edesc in
