@@ -1,0 +1,53 @@
+successfull parsing
+start typing
+check add and methods:MethodPolymorphysm:main
+check add and methods:A:foo
+check add and methods:A:foo
+--------- env --------
+A : class_env(parent=: Object)
+method : foo
+method : foo paramlist: int 
+Boolean : class_env(parent=: Object)
+Integer : class_env(parent=: Object)
+MethodPolymorphysm : class_env(parent=: Object)
+method : main
+Object : class_env(parent=: )
+String : class_env(parent=: Object)
+end typing
+_______________main___________________
+A a = new A();
+    /*
+    ------ a in frame ------
+    a : 0 (ref)
+    ------ object in heap ------
+    [A] (0) :
+    */
+
+int i = a.foo();
+    /*
+    ------ Call method: foo() ---------
+    ------ Return: 100 ------------
+    */
+
+    /*
+    ------ i in frame ------
+    i : 100
+    */
+
+int j = a.foo(99);
+    /*
+    ------ Call method: foo() ---------
+int k = i;
+    /*
+    ------ k in frame ------
+    k : 99
+    */
+
+    ------ Return: 99 ------------
+    */
+
+    /*
+    ------ j in frame ------
+    j : 99
+    */
+

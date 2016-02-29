@@ -1,0 +1,52 @@
+successfull parsing
+start typing
+check add and methods:Inheritance:main
+check add and methods:A:getNumberA
+check add and methods:B:getNumberB
+--------- env --------
+A : class_env(parent=: Object)
+method : getNumberA
+ attr:  int a = 10;
+B : class_env(parent=: A)
+method : getNumberB
+ attr:  int k = 20;
+Boolean : class_env(parent=: Object)
+Inheritance : class_env(parent=: Object)
+method : main paramlist: String[] 
+Integer : class_env(parent=: Object)
+Object : class_env(parent=: )
+String : class_env(parent=: Object)
+end typing
+_______________main___________________
+B b = new B();
+    /*
+    ------ b in frame ------
+    b : 0 (ref)
+    ------ object in heap ------
+    [B] (0) :
+      a : 10
+      k : 20
+    */
+
+int i = b.getNumberA();
+    /*
+    ------ Call method: getNumberA() ---------
+    ------ Return: 10 ------------
+    */
+
+    /*
+    ------ i in frame ------
+    i : 10
+    */
+
+int j = b.getNumberB();
+    /*
+    ------ Call method: getNumberB() ---------
+    ------ Return: 20 ------------
+    */
+
+    /*
+    ------ j in frame ------
+    j : 20
+    */
+
